@@ -1,0 +1,100 @@
+name: Sync Official Upstream
+
+on:
+  schedule:
+    - cron: '30 19 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: upstream-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.repository_owner != 'QuantumNous'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: custom/main
+          fetch-depth: 0
+
+      - name: Fetch official releases
+        id: versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          git remote get-url upstream >/dev/null 2>&1 || git remote add upstream https://github.com/QuantumNous/new-api.git
+          git fetch upstream main --tags --prune
+          git push origin refs/remotes/upstream/main:refs/heads/main
+          latest="$(git tag --list 'v*' --sort=-v:refname | head -n 1)"
+          current="$(tr -d '[:space:]' < UPSTREAM_VERSION)"
+          if [[ -z "$latest" ]]; then
+            echo 'no official release tag found' >&2
+            exit 1
+          fi
+          echo "latest=$latest" >> "$GITHUB_OUTPUT"
+          echo "current=$current" >> "$GITHUB_OUTPUT"
+          if [[ "$latest" == "$current" ]]; then
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+          else
+            echo 'changed=true' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create clean sync branch
+        if: steps.versions.outputs.changed == 'true'
+        id: merge
+        shell: bash
+        run: |
+          set -euo pipefail
+          latest='${{ steps.versions.outputs.latest }}'
+          branch="sync/upstream-${latest//\//-}"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin custom/main
+          git fetch origin "+refs/heads/$branch:refs/remotes/origin/$branch" || true
+          git switch -C "$branch" origin/custom/main
+          if ! git merge --no-ff --no-edit "$latest"; then
+            git merge --abort
+            title="Upstream merge conflict: $latest"
+            if ! gh issue list --state open --search "$title in:title" --json title --jq '.[].title' | grep -Fxq "$title"; then
+              gh issue create \
+                --title "$title" \
+                --body "Automatic merge into custom/main failed. Resolve the official $latest update manually; production was not changed."
+            fi
+            exit 1
+          fi
+          printf '%s\n' "$latest" > UPSTREAM_VERSION
+          git add UPSTREAM_VERSION
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: record upstream $latest"
+          fi
+          git push --force-with-lease origin "$branch"
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+
+      - name: Open sync pull request
+        if: steps.versions.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch='${{ steps.merge.outputs.branch }}'
+          latest='${{ steps.versions.outputs.latest }}'
+          existing="$(gh pr list --base custom/main --head "$branch" --state open --json number --jq '.[0].number // empty')"
+          if [[ -z "$existing" ]]; then
+            gh pr create \
+              --base custom/main \
+              --head "$branch" \
+              --title "chore: sync official $latest" \
+              --body "Automated official release sync. Review migrations, security-sensitive diffs and all CI checks before merging. Production deployment remains manual."
+          fi
+
+      - name: Report no update
+        if: steps.versions.outputs.changed == 'false'
+        run: echo 'custom/main already uses the newest official release tag'
