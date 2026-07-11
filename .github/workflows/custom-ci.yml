@@ -54,7 +54,7 @@ jobs:
           set -euo pipefail
           test -f web/default/dist/index.html
           test -f web/classic/dist/index.html
-          tar -C web -czf embedded-web-dist.tgz default/dist classic/dist
+          tar -C web -czf "$GITHUB_WORKSPACE/web/embedded-web-dist.tgz" default/dist classic/dist
       - name: Upload embedded frontend assets
         uses: actions/upload-artifact@v4
         with:
