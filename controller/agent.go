@@ -2,7 +2,6 @@ package controller
 
 import (
 	"fmt"
-	"math"
 	"strconv"
 	"strings"
 
@@ -59,7 +58,7 @@ func agentWithdrawalAmountQuota(req createAgentWithdrawalRequest) int {
 	if req.Amount <= 0 {
 		return 0
 	}
-	return int(math.Round(req.Amount * common.QuotaPerUnit))
+	return common.QuotaRound(req.Amount * common.QuotaPerUnit)
 }
 
 func resolveAgentProfileUpdate(req upsertAgentProfileRequest) (bool, int, error) {

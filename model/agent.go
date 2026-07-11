@@ -17,7 +17,8 @@ const (
 	AgentTierTwoCommissionRateBps   = 1000
 	AgentTierThreeCommissionRateBps = 1300
 
-	agentCommissionRateBase = 10000
+	agentCommissionRateBase     = 10000
+	agentPaymentQRCodeMaxLength = 60000
 )
 
 const (
@@ -29,7 +30,7 @@ const (
 type AgentProfile struct {
 	Id                        int   `json:"id"`
 	UserId                    int   `json:"user_id" gorm:"uniqueIndex;not null"`
-	Enabled                   bool  `json:"enabled" gorm:"default:true"`
+	Enabled                   bool  `json:"enabled"`
 	ManualRateBps             int   `json:"manual_rate_bps" gorm:"default:0"`
 	CurrentRateBps            int   `json:"current_rate_bps" gorm:"default:700"`
 	TotalCustomerConsumeQuota int64 `json:"total_customer_consume_quota" gorm:"bigint;default:0"`
@@ -591,6 +592,9 @@ func CreateAgentWithdrawal(agentUserId int, amountQuota int, paymentAccount stri
 	if err := validateAgentWithdrawalAmount(amountQuota); err != nil {
 		return nil, err
 	}
+	paymentAccount = strings.TrimSpace(paymentAccount)
+	paymentQRCode = strings.TrimSpace(paymentQRCode)
+	note = strings.TrimSpace(note)
 	var withdrawal AgentWithdrawal
 	err := DB.Transaction(func(tx *gorm.DB) error {
 		profile, err := ensureAgentProfileWithTx(tx, agentUserId, true)
@@ -603,12 +607,18 @@ func CreateAgentWithdrawal(agentUserId int, amountQuota int, paymentAccount stri
 		if profile.PendingCommissionQuota < amountQuota {
 			return errors.New("可提现佣金不足")
 		}
+		if paymentAccount == "" && paymentQRCode == "" {
+			return errors.New("请填写收款账号或上传收款码")
+		}
+		if len(paymentQRCode) > agentPaymentQRCodeMaxLength {
+			return errors.New("收款码图片太大，请上传更小的收款码")
+		}
 		withdrawal = AgentWithdrawal{
 			AgentUserId:    agentUserId,
 			AmountQuota:    amountQuota,
-			PaymentAccount: strings.TrimSpace(paymentAccount),
-			PaymentQRCode:  strings.TrimSpace(paymentQRCode),
-			Note:           strings.TrimSpace(note),
+			PaymentAccount: paymentAccount,
+			PaymentQRCode:  paymentQRCode,
+			Note:           note,
 			Status:         AgentWithdrawalStatusPending,
 		}
 		if err := tx.Create(&withdrawal).Error; err != nil {

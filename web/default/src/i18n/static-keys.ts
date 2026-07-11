@@ -447,6 +447,17 @@ export const STATIC_I18N_KEYS = [
   'Validity',
   'Actions',
 
+  // Agent center and management (dynamic tabs/status labels)
+  'Agent Center',
+  'Agent Management',
+  'Commissions',
+  'Customers',
+  'Withdrawals',
+  'Profiles',
+  'Pending',
+  'Paid',
+  'Rejected',
+
   // Sidebar modules
   'Chat Area',
   'Playground and chat functions',

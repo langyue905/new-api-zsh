@@ -1,6 +1,7 @@
 package model
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/QuantumNous/new-api/common"
@@ -176,6 +177,14 @@ func TestCreateAgentWithdrawalValidatesAmountAndReservesPendingCommission(t *tes
 	_, err = CreateAgentWithdrawal(agent.Id, 30*unit, "", "", "")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "可提现")
+
+	_, err = CreateAgentWithdrawal(agent.Id, 10*unit, "", "", "")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "收款")
+
+	_, err = CreateAgentWithdrawal(agent.Id, 10*unit, "", strings.Repeat("a", 60001), "")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "收款码")
 
 	withdrawal, err := CreateAgentWithdrawal(agent.Id, 10*unit, "pay-account", "pay-code", "first withdrawal")
 	require.NoError(t, err)
