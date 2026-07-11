@@ -30,7 +30,16 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-      - name: Install frontend dependencies
+      - name: Install classic frontend dependencies
+        working-directory: web
+        run: bun install --filter ./classic --frozen-lockfile
+      - name: Build classic frontend
+        working-directory: web/classic
+        run: bun run build
+      - name: Reset frontend dependencies
+        shell: bash
+        run: rm -rf web/node_modules web/default/node_modules web/classic/node_modules
+      - name: Install default frontend dependencies
         working-directory: web
         run: bun install --frozen-lockfile
       - name: Type-check default frontend
@@ -38,9 +47,6 @@ jobs:
         run: bun run typecheck
       - name: Build default frontend
         working-directory: web/default
-        run: bun run build
-      - name: Build classic frontend
-        working-directory: web/classic
         run: bun run build
       - name: Verify and package embedded frontend assets
         shell: bash
