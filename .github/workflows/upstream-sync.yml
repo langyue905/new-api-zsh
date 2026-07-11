@@ -34,7 +34,7 @@ jobs:
           git remote get-url upstream >/dev/null 2>&1 || git remote add upstream https://github.com/QuantumNous/new-api.git
           git fetch upstream main --tags --prune
           git push origin refs/remotes/upstream/main:refs/heads/main
-          latest="$(git tag --list 'v*' --sort=-v:refname | head -n 1)"
+          latest="$(git tag --list 'v*' --sort=-v:refname | sed -n '1p')"
           current="$(tr -d '[:space:]' < UPSTREAM_VERSION)"
           if [[ -z "$latest" ]]; then
             echo 'no official release tag found' >&2
