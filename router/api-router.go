@@ -147,6 +147,29 @@ func SetApiRouter(router *gin.Engine) {
 			}
 		}
 
+		agentRoute := apiRouter.Group("/agent")
+		agentRoute.Use(middleware.UserAuth())
+		{
+			agentRoute.GET("/summary", controller.GetAgentSummary)
+			agentRoute.GET("/customers", controller.GetAgentCustomers)
+			agentRoute.GET("/commissions", controller.GetAgentCommissions)
+			agentRoute.GET("/withdrawals", controller.GetAgentWithdrawals)
+			agentRoute.POST("/transfer", middleware.CriticalRateLimit(), controller.TransferAgentCommission)
+			agentRoute.POST("/withdrawals", middleware.CriticalRateLimit(), controller.CreateAgentWithdrawal)
+		}
+
+		agentAdminRoute := apiRouter.Group("/agent/admin")
+		agentAdminRoute.Use(middleware.AdminAuth())
+		{
+			agentAdminRoute.GET("/profiles", controller.AdminListAgentProfiles)
+			agentAdminRoute.POST("/profiles", controller.AdminUpsertAgentProfile)
+			agentAdminRoute.POST("/assign", controller.AdminAssignAgentCustomer)
+			agentAdminRoute.GET("/:id/customers", controller.AdminGetAgentCustomers)
+			agentAdminRoute.GET("/withdrawals", controller.AdminListAgentWithdrawals)
+			agentAdminRoute.GET("/withdrawals/:id", controller.AdminGetAgentWithdrawal)
+			agentAdminRoute.POST("/withdrawals/:id/process", middleware.CriticalRateLimit(), controller.AdminProcessAgentWithdrawal)
+		}
+
 		// Subscription billing (plans, purchase, admin management)
 		subscriptionRoute := apiRouter.Group("/subscription")
 		subscriptionRoute.Use(middleware.UserAuth())
