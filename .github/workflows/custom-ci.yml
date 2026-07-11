@@ -1,0 +1,101 @@
+name: Custom CI
+
+on:
+  pull_request:
+    branches:
+      - custom/main
+  push:
+    branches:
+      - custom/main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: custom-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  repository-guards:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify custom repository boundary
+        run: bash scripts/custom/verify-foundation.sh
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Install frontend dependencies
+        working-directory: web
+        run: bun install --frozen-lockfile
+      - name: Type-check default frontend
+        working-directory: web/default
+        run: bun run typecheck
+      - name: Build default frontend
+        working-directory: web/default
+        run: bun run build
+      - name: Build classic frontend
+        working-directory: web/classic
+        run: bun run build
+      - name: Verify and package embedded frontend assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f web/default/dist/index.html
+          test -f web/classic/dist/index.html
+          tar -C web -czf embedded-web-dist.tgz default/dist classic/dist
+      - name: Upload embedded frontend assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: embedded-web-dist
+          path: web/embedded-web-dist.tgz
+          if-no-files-found: error
+          retention-days: 1
+
+  backend:
+    needs:
+      - frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Download embedded frontend assets
+        uses: actions/download-artifact@v4
+        with:
+          name: embedded-web-dist
+          path: artifact
+      - name: Restore embedded frontend assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar -C web -xzf artifact/embedded-web-dist.tgz
+          test -f web/default/dist/index.html
+          test -f web/classic/dist/index.html
+      - name: Run backend tests
+        run: go test ./...
+
+  image-build:
+    needs:
+      - repository-guards
+      - backend
+      - frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build image without publishing
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: new-api-zsh:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
