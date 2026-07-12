@@ -114,10 +114,8 @@ export function useSidebarData(): SidebarData {
           },
           {
             title: t('Mall'),
-            url: 'https://pay.ldxp.cn/shop/baixiaosheng',
-            configUrls: ['/mall'],
+            url: '/mall',
             icon: ShoppingCart,
-            external: true,
           },
           {
             title: t('Customer Service'),
