@@ -25,13 +25,13 @@ describe('mall embed config', () => {
   test('embeds the linked shop and crops to the product panel', () => {
     assert.equal(MALL_EMBED_CONFIG.src, 'https://pay.ldxp.cn/shop/baixiaosheng')
     assert.deepEqual(MALL_EMBED_CONFIG.cropPx, {
-      bottom: 106,
-      left: 164,
-      right: 146,
-      top: 142,
+      bottom: 110,
+      left: 241,
+      right: 216,
+      top: 226,
     })
-    assert.equal(MALL_EMBED_CONFIG.panelHeightPx, 858)
-    assert.equal(MALL_EMBED_CONFIG.panelWidthPx, 1514)
+    assert.equal(MALL_EMBED_CONFIG.panelHeightPx, 770)
+    assert.equal(MALL_EMBED_CONFIG.panelWidthPx, 1367)
     assert.equal(MALL_EMBED_CONFIG.minDesktopWidthPx, 1180)
   })
 })

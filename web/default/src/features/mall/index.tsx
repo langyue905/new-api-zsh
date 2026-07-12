@@ -37,9 +37,9 @@ export function Mall() {
     <SectionPageLayout fixedContent>
       <SectionPageLayout.Title>{t('Mall')}</SectionPageLayout.Title>
       <SectionPageLayout.Content>
-        <div className='h-full min-h-0 overflow-auto bg-transparent'>
+        <div className='h-full min-h-0 overflow-hidden bg-transparent'>
           <div
-            className='relative mx-auto overflow-hidden rounded-xl bg-white shadow-sm'
+            className='relative mx-auto max-w-full overflow-hidden rounded-xl bg-white shadow-sm'
             style={{
               height: MALL_EMBED_CONFIG.panelHeightPx,
               width: MALL_EMBED_CONFIG.panelWidthPx,

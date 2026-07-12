@@ -19,12 +19,12 @@ For commercial licensing, please contact support@quantumnous.com
 export const MALL_EMBED_CONFIG = {
   src: 'https://pay.ldxp.cn/shop/baixiaosheng',
   cropPx: {
-    bottom: 106,
-    left: 164,
-    right: 146,
-    top: 142,
+    bottom: 110,
+    left: 241,
+    right: 216,
+    top: 226,
   },
-  panelHeightPx: 858,
-  panelWidthPx: 1514,
+  panelHeightPx: 770,
+  panelWidthPx: 1367,
   minDesktopWidthPx: 1180,
 } as const
