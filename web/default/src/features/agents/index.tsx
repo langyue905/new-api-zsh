@@ -19,8 +19,6 @@ For commercial licensing, please contact support@quantumnous.com
 import {
   BadgeDollarSign,
   CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
   Copy,
   RefreshCw,
   Send,
@@ -80,7 +78,6 @@ import {
   getAgentCommissions,
   getAgentCustomers,
   getAgentSummary,
-  getAgentUsageLogs,
   getAgentWithdrawals,
   transferAgentCommission,
 } from './api'
@@ -92,7 +89,6 @@ import type {
   AgentCommission,
   AgentCustomer,
   AgentSummary,
-  AgentUsageLog,
   AgentWithdrawal,
 } from './types'
 
@@ -101,8 +97,6 @@ const withdrawalStatusLabels: Record<number, string> = {
   2: 'Paid',
   3: 'Rejected',
 }
-
-const agentUsageLogsPageSize = 10
 
 function formatRate(rateBps: number) {
   return `${(rateBps / 100).toFixed(0)}%`
@@ -366,15 +360,12 @@ export function AgentCenter() {
   const [summary, setSummary] = useState<AgentSummary | null>(null)
   const [customers, setCustomers] = useState<AgentCustomer[]>([])
   const [commissions, setCommissions] = useState<AgentCommission[]>([])
-  const [usageLogs, setUsageLogs] = useState<AgentUsageLog[]>([])
-  const [usageLogPage, setUsageLogPage] = useState(1)
-  const [usageLogTotal, setUsageLogTotal] = useState(0)
   const [withdrawals, setWithdrawals] = useState<AgentWithdrawal[]>([])
   const [loading, setLoading] = useState(true)
   const [withdrawalOpen, setWithdrawalOpen] = useState(false)
   const [transferring, setTransferring] = useState(false)
   const [activeTab, setActiveTab] = useState<
-    'commissions' | 'customers' | 'usageLogs' | 'withdrawals'
+    'commissions' | 'customers' | 'withdrawals'
   >('commissions')
 
   const invitationLink = buildAgentLink(summary?.aff_code)
@@ -382,19 +373,13 @@ export function AgentCenter() {
   const refresh = useCallback(async () => {
     setLoading(true)
     try {
-      const [
-        summaryRes,
-        customersRes,
-        commissionsRes,
-        usageLogsRes,
-        withdrawalsRes,
-      ] = await Promise.all([
-        getAgentSummary(),
-        getAgentCustomers(1, 10),
-        getAgentCommissions(1, 10),
-        getAgentUsageLogs(usageLogPage, agentUsageLogsPageSize),
-        getAgentWithdrawals(1, 10),
-      ])
+      const [summaryRes, customersRes, commissionsRes, withdrawalsRes] =
+        await Promise.all([
+          getAgentSummary(),
+          getAgentCustomers(1, 10),
+          getAgentCommissions(1, 10),
+          getAgentWithdrawals(1, 10),
+        ])
       if (summaryRes.success && summaryRes.data) {
         setSummary(summaryRes.data)
       }
@@ -404,17 +389,13 @@ export function AgentCenter() {
       if (commissionsRes.success && commissionsRes.data) {
         setCommissions(commissionsRes.data.items || [])
       }
-      if (usageLogsRes.success && usageLogsRes.data) {
-        setUsageLogs(usageLogsRes.data.items || [])
-        setUsageLogTotal(usageLogsRes.data.total || 0)
-      }
       if (withdrawalsRes.success && withdrawalsRes.data) {
         setWithdrawals(withdrawalsRes.data.items || [])
       }
     } finally {
       setLoading(false)
     }
-  }, [usageLogPage])
+  }, [])
 
   useEffect(() => {
     refresh()
@@ -429,17 +410,6 @@ export function AgentCenter() {
         100
     )
   }, [summary])
-
-  const usageLogTotalPages = Math.max(
-    1,
-    Math.ceil(usageLogTotal / agentUsageLogsPageSize)
-  )
-  const usageLogDisplayStart =
-    usageLogTotal === 0 ? 0 : (usageLogPage - 1) * agentUsageLogsPageSize + 1
-  const usageLogDisplayEnd = Math.min(
-    usageLogPage * agentUsageLogsPageSize,
-    usageLogTotal
-  )
 
   const handleTransfer = async () => {
     setTransferring(true)
@@ -586,55 +556,75 @@ export function AgentCenter() {
               <CardHeader>
                 <CardTitle>{t('Agent Records')}</CardTitle>
                 <CardAction className='flex gap-1'>
-                  {(
-                    [
-                      'commissions',
-                      'customers',
-                      'usageLogs',
-                      'withdrawals',
-                    ] as const
-                  ).map((tab) => (
-                    <Button
-                      key={tab}
-                      size='sm'
-                      variant={activeTab === tab ? 'default' : 'outline'}
-                      onClick={() => setActiveTab(tab)}
-                    >
-                      {tab === 'usageLogs'
-                        ? t('Usage Logs')
-                        : t(tab[0].toUpperCase() + tab.slice(1))}
-                    </Button>
-                  ))}
+                  {(['commissions', 'customers', 'withdrawals'] as const).map(
+                    (tab) => (
+                      <Button
+                        key={tab}
+                        size='sm'
+                        variant={activeTab === tab ? 'default' : 'outline'}
+                        onClick={() => setActiveTab(tab)}
+                      >
+                        {t(tab[0].toUpperCase() + tab.slice(1))}
+                      </Button>
+                    )
+                  )}
                 </CardAction>
               </CardHeader>
               <CardContent>
                 {activeTab === 'commissions' ? (
-                  <AgentTable
-                    columns={[
-                      t('Customer'),
-                      t('Usage'),
-                      t('Commission'),
-                      t('Rate'),
-                      t('Time'),
-                    ]}
-                    rows={commissions}
-                    emptyText={t('No commission records')}
-                    renderRow={(row) => (
-                      <TableRow key={row.id}>
-                        <TableCell>#{row.customer_user_id}</TableCell>
-                        <TableCell>
-                          {formatQuotaWithCurrency(row.quota)}
-                        </TableCell>
-                        <TableCell>
-                          {formatQuotaWithCurrency(row.commission_quota)}
-                        </TableCell>
-                        <TableCell>
-                          {formatRate(row.commission_rate_bps)}
-                        </TableCell>
-                        <TableCell>{formatDate(row.created_at)}</TableCell>
-                      </TableRow>
-                    )}
-                  />
+                  <div className='overflow-x-auto'>
+                    <AgentTable
+                      columns={[
+                        t('Customer'),
+                        t('Model'),
+                        t('Usage'),
+                        t('Tokens'),
+                        t('Commission'),
+                        t('Rate'),
+                        t('Time'),
+                      ]}
+                      rows={commissions}
+                      emptyText={t('No commission records')}
+                      renderRow={(row) => (
+                        <TableRow key={row.id}>
+                          <TableCell>
+                            <div className='font-medium'>
+                              {row.customer_display_name ||
+                                row.customer_username ||
+                                `#${row.customer_user_id}`}
+                            </div>
+                            <div className='text-muted-foreground text-xs'>
+                              #{row.customer_user_id}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div>{row.model_name || '-'}</div>
+                            <div className='text-muted-foreground text-xs'>
+                              {row.group || '-'}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {formatQuotaWithCurrency(row.quota)}
+                          </TableCell>
+                          <TableCell>
+                            {(row.prompt_tokens || 0) +
+                              (row.completion_tokens || 0)}
+                          </TableCell>
+                          <TableCell>
+                            {formatQuotaWithCurrency(row.commission_quota)}
+                          </TableCell>
+                          <TableCell>
+                            {formatRate(row.commission_rate_bps)}
+                          </TableCell>
+                          <TableCell>
+                            {formatDate(
+                              row.consume_created_at || row.created_at
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    />
+                  </div>
                 ) : null}
                 {activeTab === 'customers' ? (
                   <AgentTable
@@ -654,96 +644,6 @@ export function AgentCenter() {
                       </TableRow>
                     )}
                   />
-                ) : null}
-                {activeTab === 'usageLogs' ? (
-                  <div className='space-y-3'>
-                    <div className='overflow-x-auto'>
-                      <AgentTable
-                        columns={[
-                          t('Customer'),
-                          t('Model'),
-                          t('Usage'),
-                          t('Tokens'),
-                          t('Time'),
-                        ]}
-                        rows={usageLogs}
-                        emptyText={t('No usage logs')}
-                        renderRow={(row) => (
-                          <TableRow key={row.request_id || row.id}>
-                            <TableCell>
-                              <div className='font-medium'>
-                                {row.username || `#${row.user_id}`}
-                              </div>
-                              <div className='text-muted-foreground text-xs'>
-                                #{row.user_id}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div>{row.model_name || '-'}</div>
-                              <div className='text-muted-foreground text-xs'>
-                                {row.group || '-'}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              {formatQuotaWithCurrency(row.quota)}
-                            </TableCell>
-                            <TableCell>
-                              {(row.prompt_tokens || 0) +
-                                (row.completion_tokens || 0)}
-                            </TableCell>
-                            <TableCell>{formatDate(row.created_at)}</TableCell>
-                          </TableRow>
-                        )}
-                      />
-                    </div>
-                    {usageLogTotal > 0 ? (
-                      <div className='flex flex-col items-center gap-3 border-t pt-3 sm:flex-row sm:justify-between'>
-                        <div className='text-muted-foreground text-xs sm:text-sm'>
-                          {t('Showing')} {usageLogDisplayStart}-
-                          {usageLogDisplayEnd} {t('of')} {usageLogTotal}
-                        </div>
-                        <div className='flex items-center gap-2'>
-                          <Button
-                            type='button'
-                            variant='outline'
-                            size='icon-sm'
-                            aria-label={t('Previous page')}
-                            onClick={() =>
-                              setUsageLogPage((current) =>
-                                Math.max(1, current - 1)
-                              )
-                            }
-                            disabled={loading || usageLogPage <= 1}
-                          >
-                            <ChevronLeft className='size-4' />
-                          </Button>
-                          <div className='text-muted-foreground flex min-w-12 items-center justify-center gap-1 text-sm'>
-                            <span className='text-foreground font-medium'>
-                              {usageLogPage}
-                            </span>
-                            <span>/</span>
-                            <span>{usageLogTotalPages}</span>
-                          </div>
-                          <Button
-                            type='button'
-                            variant='outline'
-                            size='icon-sm'
-                            aria-label={t('Next page')}
-                            onClick={() =>
-                              setUsageLogPage((current) =>
-                                Math.min(usageLogTotalPages, current + 1)
-                              )
-                            }
-                            disabled={
-                              loading || usageLogPage >= usageLogTotalPages
-                            }
-                          >
-                            <ChevronRight className='size-4' />
-                          </Button>
-                        </div>
-                      </div>
-                    ) : null}
-                  </div>
                 ) : null}
                 {activeTab === 'withdrawals' ? (
                   <AgentTable

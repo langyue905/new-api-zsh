@@ -366,6 +366,44 @@ func TestRecordAgentCommissionForConsumeLogIsIdempotentWithoutRequestIDOrLogID(t
 	assert.Empty(t, commissions)
 }
 
+func TestGetAgentCommissionsIncludesUsageLogDetails(t *testing.T) {
+	truncateTables(t)
+
+	unit := int(common.QuotaPerUnit)
+	agent := insertAgentTestUser(t, "agent_commission_detail", 0)
+	customer := insertAgentTestUser(t, "customer_commission_detail", agent.Id)
+	require.NoError(t, DB.Model(&User{}).Where("id = ?", customer.Id).Update("display_name", "Detail Customer").Error)
+	log := Log{
+		UserId:           customer.Id,
+		Username:         customer.Username,
+		CreatedAt:        12345,
+		Type:             LogTypeConsume,
+		ModelName:        "gpt-5.6-sol",
+		Group:            "gpt-pro",
+		Quota:            2 * unit,
+		PromptTokens:     111,
+		CompletionTokens: 222,
+		TokenName:        "customer-token",
+		RequestId:        "req-agent-commission-detail",
+	}
+	require.NoError(t, LOG_DB.Create(&log).Error)
+	require.NoError(t, RecordAgentCommissionForConsumeLog(&log))
+
+	commissions, total, err := GetAgentCommissions(agent.Id, 0, 10)
+	require.NoError(t, err)
+	assert.EqualValues(t, 1, total)
+	require.Len(t, commissions, 1)
+	assert.Equal(t, customer.Id, commissions[0].CustomerUserId)
+	assert.Equal(t, customer.Username, commissions[0].CustomerUsername)
+	assert.Equal(t, "Detail Customer", commissions[0].CustomerDisplayName)
+	assert.Equal(t, "gpt-5.6-sol", commissions[0].ModelName)
+	assert.Equal(t, "gpt-pro", commissions[0].Group)
+	assert.Equal(t, "customer-token", commissions[0].TokenName)
+	assert.Equal(t, 111, commissions[0].PromptTokens)
+	assert.Equal(t, 222, commissions[0].CompletionTokens)
+	assert.Equal(t, int64(12345), commissions[0].ConsumeCreatedAt)
+}
+
 func TestTransferAgentCommissionToQuotaMovesPendingCommissionToBalance(t *testing.T) {
 	truncateTables(t)
 

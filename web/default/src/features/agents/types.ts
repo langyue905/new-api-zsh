@@ -65,6 +65,9 @@ export interface AgentCommission {
   id: number
   agent_user_id: number
   customer_user_id: number
+  customer_username?: string
+  customer_display_name?: string
+  customer_email?: string
   consume_log_id: number
   request_id: string
   model_name: string
@@ -72,6 +75,14 @@ export interface AgentCommission {
   quota: number
   commission_quota: number
   commission_rate_bps: number
+  token_name?: string
+  prompt_tokens?: number
+  completion_tokens?: number
+  use_time?: number
+  is_stream?: boolean
+  channel?: number
+  upstream_request_id?: string
+  consume_created_at?: number
   created_at: number
 }
 

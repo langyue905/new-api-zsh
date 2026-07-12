@@ -68,6 +68,21 @@ type AgentCommission struct {
 	CreatedAt         int64  `json:"created_at" gorm:"autoCreateTime;column:created_at"`
 }
 
+type AgentCommissionView struct {
+	AgentCommission
+	CustomerUsername    string `json:"customer_username"`
+	CustomerDisplayName string `json:"customer_display_name"`
+	CustomerEmail       string `json:"customer_email"`
+	TokenName           string `json:"token_name"`
+	PromptTokens        int    `json:"prompt_tokens"`
+	CompletionTokens    int    `json:"completion_tokens"`
+	UseTime             int    `json:"use_time"`
+	IsStream            bool   `json:"is_stream"`
+	ChannelId           int    `json:"channel"`
+	UpstreamRequestId   string `json:"upstream_request_id"`
+	ConsumeCreatedAt    int64  `json:"consume_created_at"`
+}
+
 type AgentWithdrawal struct {
 	Id             int    `json:"id"`
 	AgentUserId    int    `json:"agent_user_id" gorm:"index;not null"`
@@ -669,15 +684,137 @@ func GetAgentCustomers(agentUserId int, startIdx int, num int) ([]AgentCustomer,
 	return customers, total, nil
 }
 
-func GetAgentCommissions(agentUserId int, startIdx int, num int) ([]AgentCommission, int64, error) {
+func GetAgentCommissions(agentUserId int, startIdx int, num int) ([]AgentCommissionView, int64, error) {
 	var commissions []AgentCommission
 	var total int64
 	query := DB.Model(&AgentCommission{}).Where("agent_user_id = ? AND commission_quota > 0", agentUserId)
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
-	err := query.Order("id desc").Limit(num).Offset(startIdx).Find(&commissions).Error
-	return commissions, total, err
+	if err := query.Order("id desc").Limit(num).Offset(startIdx).Find(&commissions).Error; err != nil {
+		return nil, 0, err
+	}
+	views, err := buildAgentCommissionViews(commissions)
+	return views, total, err
+}
+
+func buildAgentCommissionViews(commissions []AgentCommission) ([]AgentCommissionView, error) {
+	views := make([]AgentCommissionView, 0, len(commissions))
+	if len(commissions) == 0 {
+		return views, nil
+	}
+
+	customerIdSet := make(map[int]struct{})
+	consumeLogIdSet := make(map[int]struct{})
+	requestIdSet := make(map[string]struct{})
+	for _, commission := range commissions {
+		views = append(views, AgentCommissionView{
+			AgentCommission:  commission,
+			ConsumeCreatedAt: commission.CreatedAt,
+		})
+		if commission.CustomerUserId > 0 {
+			customerIdSet[commission.CustomerUserId] = struct{}{}
+		}
+		if commission.ConsumeLogId > 0 {
+			consumeLogIdSet[commission.ConsumeLogId] = struct{}{}
+		}
+		if commission.RequestId != "" {
+			requestIdSet[commission.RequestId] = struct{}{}
+		}
+	}
+
+	customerIds := make([]int, 0, len(customerIdSet))
+	for id := range customerIdSet {
+		customerIds = append(customerIds, id)
+	}
+	if len(customerIds) > 0 {
+		var users []User
+		if err := DB.Select("id", "username", "display_name", "email").Where("id IN ?", customerIds).Find(&users).Error; err != nil {
+			return nil, err
+		}
+		usersById := make(map[int]User, len(users))
+		for _, user := range users {
+			usersById[user.Id] = user
+		}
+		for i := range views {
+			user, ok := usersById[views[i].CustomerUserId]
+			if !ok {
+				continue
+			}
+			views[i].CustomerUsername = user.Username
+			views[i].CustomerDisplayName = user.DisplayName
+			views[i].CustomerEmail = user.Email
+		}
+	}
+
+	consumeLogIds := make([]int, 0, len(consumeLogIdSet))
+	for id := range consumeLogIdSet {
+		consumeLogIds = append(consumeLogIds, id)
+	}
+	requestIds := make([]string, 0, len(requestIdSet))
+	for requestId := range requestIdSet {
+		requestIds = append(requestIds, requestId)
+	}
+	if len(consumeLogIds) == 0 && len(requestIds) == 0 {
+		return views, nil
+	}
+
+	var logs []Log
+	logQuery := LOG_DB.Model(&Log{}).Where("logs.type = ?", LogTypeConsume)
+	switch {
+	case len(consumeLogIds) > 0 && len(requestIds) > 0:
+		logQuery = logQuery.Where("logs.id IN ? OR logs.request_id IN ?", consumeLogIds, requestIds)
+	case len(consumeLogIds) > 0:
+		logQuery = logQuery.Where("logs.id IN ?", consumeLogIds)
+	default:
+		logQuery = logQuery.Where("logs.request_id IN ?", requestIds)
+	}
+	if err := logQuery.Find(&logs).Error; err != nil {
+		return nil, err
+	}
+	logsById := make(map[int]Log)
+	logsByRequestId := make(map[string]Log)
+	for _, log := range logs {
+		if log.Id > 0 {
+			logsById[log.Id] = log
+		}
+		if log.RequestId != "" {
+			logsByRequestId[log.RequestId] = log
+		}
+	}
+	for i := range views {
+		var log Log
+		found := false
+		if views[i].ConsumeLogId > 0 {
+			log, found = logsById[views[i].ConsumeLogId]
+		}
+		if !found && views[i].RequestId != "" {
+			log, found = logsByRequestId[views[i].RequestId]
+		}
+		if !found {
+			continue
+		}
+		if views[i].CustomerUsername == "" {
+			views[i].CustomerUsername = log.Username
+		}
+		if log.ModelName != "" {
+			views[i].ModelName = log.ModelName
+		}
+		if log.Group != "" {
+			views[i].Group = log.Group
+		}
+		views[i].TokenName = log.TokenName
+		views[i].PromptTokens = log.PromptTokens
+		views[i].CompletionTokens = log.CompletionTokens
+		views[i].UseTime = log.UseTime
+		views[i].IsStream = log.IsStream
+		views[i].ChannelId = log.ChannelId
+		views[i].UpstreamRequestId = log.UpstreamRequestId
+		if log.CreatedAt > 0 {
+			views[i].ConsumeCreatedAt = log.CreatedAt
+		}
+	}
+	return views, nil
 }
 
 func GetAgentUsageLogs(agentUserId int, startIdx int, num int) ([]*Log, int64, error) {
