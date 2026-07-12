@@ -128,6 +128,10 @@ export function SidebarModulesSection({
         title: t('Mall'),
         description: t('Purchase redemption codes.'),
       },
+      support: {
+        title: t('Customer Service'),
+        description: t('Customer service and internal group access.'),
+      },
       personal: {
         title: t('Profile'),
         description: t('Personal settings and profile management.'),

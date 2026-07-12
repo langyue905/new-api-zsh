@@ -24,6 +24,7 @@ import {
   FileText,
   FlaskConical,
   Handshake,
+  Headset,
   Key,
   LayoutDashboard,
   ListTodo,
@@ -117,6 +118,11 @@ export function useSidebarData(): SidebarData {
             configUrls: ['/mall'],
             icon: ShoppingCart,
             external: true,
+          },
+          {
+            title: t('Customer Service'),
+            url: '/support',
+            icon: Headset,
           },
           {
             title: t('Agent Center'),

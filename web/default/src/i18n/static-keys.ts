@@ -500,6 +500,8 @@ export const STATIC_I18N_KEYS = [
   'User personal functions',
   'Wallet Management',
   'Balance and top-up management',
+  'Customer Service',
+  'Customer service and internal group access.',
   'Personal Settings',
   'Personal info settings',
   'Saved successfully',
