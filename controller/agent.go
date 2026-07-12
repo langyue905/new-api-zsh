@@ -61,6 +61,10 @@ func agentWithdrawalAmountQuota(req createAgentWithdrawalRequest) int {
 	return common.QuotaRound(req.Amount * common.QuotaPerUnit)
 }
 
+func agentBalanceActionLogType() int {
+	return model.LogTypeSystem
+}
+
 func resolveAgentProfileUpdate(req upsertAgentProfileRequest) (bool, int, error) {
 	enabled := true
 	if req.Enabled != nil {
@@ -137,7 +141,7 @@ func TransferAgentCommission(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
-	model.RecordLog(id, model.LogTypeTopup, fmt.Sprintf("代理佣金划转到余额 %s", logger.LogQuota(quota)))
+	model.RecordLog(id, agentBalanceActionLogType(), fmt.Sprintf("代理佣金划转到余额 %s", logger.LogQuota(quota)))
 	common.ApiSuccess(c, gin.H{"quota": quota})
 }
 
@@ -171,7 +175,7 @@ func CreateAgentWithdrawal(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
-	model.RecordLog(c.GetInt("id"), model.LogTypeTopup, fmt.Sprintf("代理申请提现 %s", logger.LogQuota(withdrawal.AmountQuota)))
+	model.RecordLog(c.GetInt("id"), agentBalanceActionLogType(), fmt.Sprintf("代理申请提现 %s", logger.LogQuota(withdrawal.AmountQuota)))
 	common.ApiSuccess(c, withdrawal)
 }
 

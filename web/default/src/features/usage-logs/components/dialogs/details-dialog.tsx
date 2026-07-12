@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next'
 /*
 Copyright (C) 2023-2026 QuantumNous
 
@@ -31,7 +32,6 @@ import {
   Info,
   LogIn,
 } from 'lucide-react'
-import type { TFunction } from 'i18next'
 import { useTranslation } from 'react-i18next'
 
 import { Dialog } from '@/components/dialog'
@@ -58,6 +58,7 @@ import {
   getResponseTimeColor,
   renderAuditContent,
 } from '../../lib/format'
+import { isAgentBalanceActionLogContent } from '../../lib/topup-audit'
 import {
   getLogTypeConfig,
   isPerCallBilling,
@@ -179,7 +180,9 @@ function getUsageBillingPathLabel(
   }
 }
 
-function isUsageBillingPathLocal(adminInfo: LogOtherData['admin_info']): boolean {
+function isUsageBillingPathLocal(
+  adminInfo: LogOtherData['admin_info']
+): boolean {
   if (adminInfo?.usage_billing_path) {
     return adminInfo.usage_billing_path === USAGE_BILLING_PATH.LOCAL
   }
@@ -467,6 +470,8 @@ export function DetailsDialog(props: DetailsDialogProps) {
   const isRefund = props.log.type === 6
   const isConsume = props.log.type === 2
   const isTopup = props.log.type === 1
+  const isAgentBalanceActionTopup =
+    isTopup && isAgentBalanceActionLogContent(details)
   const isManage = props.log.type === 3
   const isSubscription = other?.billing_source === 'subscription'
   const isTieredBilling =
@@ -508,7 +513,8 @@ export function DetailsDialog(props: DetailsDialogProps) {
           },
         ].filter(Boolean) as Array<{ label: string; value: string }>)
       : []
-  const showLegacyTopupWarning = isTopup && props.isAdmin && !adminInfo
+  const showLegacyTopupWarning =
+    isTopup && props.isAdmin && !adminInfo && !isAgentBalanceActionTopup
   const showTopupAuditSection =
     isTopup &&
     props.isAdmin &&
