@@ -1,6 +1,7 @@
 package model
 
 import (
+	"strconv"
 	"strings"
 	"testing"
 
@@ -23,6 +24,28 @@ func insertAgentTestUser(t *testing.T, username string, agentId int) User {
 	}
 	require.NoError(t, DB.Create(&user).Error)
 	return user
+}
+
+func TestListAgentProfilesFiltersByKeyword(t *testing.T) {
+	truncateTables(t)
+
+	alpha := insertAgentTestUser(t, "agent_alpha", 0)
+	beta := insertAgentTestUser(t, "agent_beta", 0)
+	insertAgentTestUser(t, "agent_gamma", 0)
+	require.NoError(t, DB.Model(&User{}).Where("id = ?", alpha.Id).Update("email", "alpha@example.com").Error)
+	require.NoError(t, DB.Model(&User{}).Where("id = ?", beta.Id).Update("email", "beta@example.com").Error)
+
+	profiles, total, err := ListAgentProfiles(0, 10, "beta@example.com")
+	require.NoError(t, err)
+	assert.EqualValues(t, 1, total)
+	require.Len(t, profiles, 1)
+	assert.Equal(t, beta.Id, profiles[0].UserId)
+
+	profiles, total, err = ListAgentProfiles(0, 10, strconv.Itoa(alpha.Id))
+	require.NoError(t, err)
+	assert.EqualValues(t, 1, total)
+	require.Len(t, profiles, 1)
+	assert.Equal(t, alpha.Id, profiles[0].UserId)
 }
 
 func TestRecordAgentCommissionForConsumeLogCreatesDefaultCommission(t *testing.T) {

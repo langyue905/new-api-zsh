@@ -165,7 +165,7 @@ func CreateAgentWithdrawal(c *gin.Context) {
 
 func AdminListAgentProfiles(c *gin.Context) {
 	pageInfo := common.GetPageQuery(c)
-	profiles, total, err := model.ListAgentProfiles(pageInfo.GetStartIdx(), pageInfo.GetPageSize())
+	profiles, total, err := model.ListAgentProfiles(pageInfo.GetStartIdx(), pageInfo.GetPageSize(), c.Query("keyword"))
 	if err != nil {
 		common.ApiError(c, err)
 		return

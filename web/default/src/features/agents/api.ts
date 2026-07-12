@@ -18,6 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { api } from '@/lib/api'
 
+import { buildAdminAgentProfilesQuery } from './lib/admin-profile-query'
 import type {
   AgentCommission,
   AgentCustomer,
@@ -83,11 +84,11 @@ export async function createAgentWithdrawal(
 
 export async function getAdminAgentProfiles(
   page = 1,
-  pageSize = 20
+  pageSize = 20,
+  keyword = ''
 ): Promise<ApiResponse<PageResponse<AgentProfileView>>> {
-  const res = await api.get(
-    `/api/agent/admin/profiles?p=${page}&page_size=${pageSize}`
-  )
+  const query = buildAdminAgentProfilesQuery({ page, pageSize, keyword })
+  const res = await api.get(`/api/agent/admin/profiles?${query}`)
   return res.data
 }
 

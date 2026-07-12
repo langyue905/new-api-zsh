@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strconv"
 	"strings"
 
 	"github.com/QuantumNous/new-api/common"
@@ -728,10 +729,20 @@ func ProcessAgentWithdrawal(id int, adminUserId int, status int, adminNote strin
 	return &withdrawal, nil
 }
 
-func ListAgentProfiles(startIdx int, num int) ([]AgentProfileView, int64, error) {
+func ListAgentProfiles(startIdx int, num int, keyword string) ([]AgentProfileView, int64, error) {
 	var profiles []AgentProfileView
 	var total int64
 	query := DB.Table("users AS u").Where("u.deleted_at IS NULL")
+	keyword = strings.TrimSpace(keyword)
+	if keyword != "" {
+		likeCondition := "u.username LIKE ? OR u.email LIKE ? OR u.display_name LIKE ?"
+		likeArgs := []interface{}{"%" + keyword + "%", "%" + keyword + "%", "%" + keyword + "%"}
+		if userId, err := strconv.Atoi(keyword); err == nil {
+			likeCondition = "u.id = ? OR " + likeCondition
+			likeArgs = append([]interface{}{userId}, likeArgs...)
+		}
+		query = query.Where("("+likeCondition+")", likeArgs...)
+	}
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}

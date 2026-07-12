@@ -19,8 +19,11 @@ For commercial licensing, please contact support@quantumnous.com
 import {
   BadgeDollarSign,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Link2,
   RefreshCw,
+  Search,
   Send,
   ShieldOff,
   Users,
@@ -68,6 +71,8 @@ const withdrawalStatusLabels: Record<number, string> = {
   2: 'Paid',
   3: 'Rejected',
 }
+
+const agentProfilesPageSize = 20
 
 function formatRate(rateBps: number) {
   return `${(rateBps / 100).toFixed(0)}%`
@@ -333,6 +338,10 @@ export function AgentAdmin() {
   const [withdrawals, setWithdrawals] = useState<AgentWithdrawal[]>([])
   const [loading, setLoading] = useState(true)
   const [withdrawalStatus, setWithdrawalStatus] = useState(1)
+  const [profilePage, setProfilePage] = useState(1)
+  const [profileTotal, setProfileTotal] = useState(0)
+  const [profileKeyword, setProfileKeyword] = useState('')
+  const [profileKeywordInput, setProfileKeywordInput] = useState('')
   const [notes, setNotes] = useState<Record<number, string>>({})
   const [customerId, setCustomerId] = useState('')
   const [agentId, setAgentId] = useState('')
@@ -345,11 +354,16 @@ export function AgentAdmin() {
     setLoading(true)
     try {
       const [profilesRes, withdrawalsRes] = await Promise.all([
-        getAdminAgentProfiles(1, 50),
+        getAdminAgentProfiles(
+          profilePage,
+          agentProfilesPageSize,
+          profileKeyword
+        ),
         getAdminAgentWithdrawals(1, 50, withdrawalStatus),
       ])
       if (profilesRes.success && profilesRes.data) {
         setProfiles(profilesRes.data.items || [])
+        setProfileTotal(profilesRes.data.total || 0)
       }
       if (withdrawalsRes.success && withdrawalsRes.data) {
         setWithdrawals(withdrawalsRes.data.items || [])
@@ -357,11 +371,21 @@ export function AgentAdmin() {
     } finally {
       setLoading(false)
     }
-  }, [withdrawalStatus])
+  }, [profileKeyword, profilePage, withdrawalStatus])
 
   useEffect(() => {
     refresh()
   }, [refresh])
+
+  const handleProfileSearch = async () => {
+    const nextKeyword = profileKeywordInput.trim()
+    if (profilePage === 1 && nextKeyword === profileKeyword) {
+      await refresh()
+      return
+    }
+    setProfilePage(1)
+    setProfileKeyword(nextKeyword)
+  }
 
   const handleAssign = async () => {
     const parsedCustomerId = Number(customerId)
@@ -405,6 +429,17 @@ export function AgentAdmin() {
       toast.error(res.message || t('Update failed'))
     }
   }
+
+  const profileTotalPages = Math.max(
+    1,
+    Math.ceil(profileTotal / agentProfilesPageSize)
+  )
+  const profileDisplayStart =
+    profileTotal === 0 ? 0 : (profilePage - 1) * agentProfilesPageSize + 1
+  const profileDisplayEnd = Math.min(
+    profilePage * agentProfilesPageSize,
+    profileTotal
+  )
 
   return (
     <SectionPageLayout fixedContent>
@@ -465,21 +500,52 @@ export function AgentAdmin() {
           <Card>
             <CardHeader>
               <CardTitle>{t('Agent Management')}</CardTitle>
-              <CardAction className='flex gap-2'>
-                <Button
-                  size='sm'
-                  variant={activeTab === 'profiles' ? 'default' : 'outline'}
-                  onClick={() => setActiveTab('profiles')}
-                >
-                  {t('Profiles')}
-                </Button>
-                <Button
-                  size='sm'
-                  variant={activeTab === 'withdrawals' ? 'default' : 'outline'}
-                  onClick={() => setActiveTab('withdrawals')}
-                >
-                  {t('Withdrawals')}
-                </Button>
+              <CardAction className='col-span-2 col-start-1 row-span-1 row-start-2 mt-2 flex w-full flex-col gap-2 justify-self-stretch sm:col-span-1 sm:col-start-2 sm:row-span-2 sm:row-start-1 sm:mt-0 sm:w-auto sm:flex-row sm:justify-self-end'>
+                <div className='flex gap-2'>
+                  <Button
+                    type='button'
+                    size='sm'
+                    variant={activeTab === 'profiles' ? 'default' : 'outline'}
+                    onClick={() => setActiveTab('profiles')}
+                  >
+                    {t('Profiles')}
+                  </Button>
+                  <Button
+                    type='button'
+                    size='sm'
+                    variant={
+                      activeTab === 'withdrawals' ? 'default' : 'outline'
+                    }
+                    onClick={() => setActiveTab('withdrawals')}
+                  >
+                    {t('Withdrawals')}
+                  </Button>
+                </div>
+                {activeTab === 'profiles' ? (
+                  <form
+                    className='flex min-w-0 gap-2 sm:w-[360px]'
+                    onSubmit={(event) => {
+                      event.preventDefault()
+                      void handleProfileSearch()
+                    }}
+                  >
+                    <div className='relative min-w-0 flex-1'>
+                      <Search className='text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2' />
+                      <Input
+                        value={profileKeywordInput}
+                        onChange={(event) =>
+                          setProfileKeywordInput(event.target.value)
+                        }
+                        placeholder={t('Search users by ID, name, or email')}
+                        className='h-7 pl-9'
+                      />
+                    </div>
+                    <Button type='submit' size='sm' disabled={loading}>
+                      <Search className='size-3.5' />
+                      {t('Search')}
+                    </Button>
+                  </form>
+                ) : null}
                 {activeTab === 'withdrawals' ? (
                   <NativeSelect
                     size='sm'
@@ -506,20 +572,71 @@ export function AgentAdmin() {
             </CardHeader>
             <CardContent>
               {activeTab === 'profiles' ? (
-                <AgentProfileTable
-                  profiles={profiles}
-                  updatingUserId={null}
-                  onRefresh={refresh}
-                />
+                <div className='space-y-3'>
+                  <div className='overflow-x-auto'>
+                    <AgentProfileTable
+                      profiles={profiles}
+                      updatingUserId={null}
+                      onRefresh={refresh}
+                    />
+                  </div>
+                  {profileTotal > 0 ? (
+                    <div className='flex flex-col items-center gap-3 border-t pt-3 sm:flex-row sm:justify-between'>
+                      <div className='text-muted-foreground text-xs sm:text-sm'>
+                        {t('Showing')} {profileDisplayStart}-{profileDisplayEnd}{' '}
+                        {t('of')} {profileTotal}
+                      </div>
+                      <div className='flex items-center gap-2'>
+                        <Button
+                          type='button'
+                          variant='outline'
+                          size='icon-sm'
+                          aria-label={t('Previous page')}
+                          onClick={() =>
+                            setProfilePage((current) =>
+                              Math.max(1, current - 1)
+                            )
+                          }
+                          disabled={loading || profilePage <= 1}
+                        >
+                          <ChevronLeft className='size-4' />
+                        </Button>
+                        <div className='text-muted-foreground flex min-w-12 items-center justify-center gap-1 text-sm'>
+                          <span className='text-foreground font-medium'>
+                            {profilePage}
+                          </span>
+                          <span>/</span>
+                          <span>{profileTotalPages}</span>
+                        </div>
+                        <Button
+                          type='button'
+                          variant='outline'
+                          size='icon-sm'
+                          aria-label={t('Next page')}
+                          onClick={() =>
+                            setProfilePage((current) =>
+                              Math.min(profileTotalPages, current + 1)
+                            )
+                          }
+                          disabled={loading || profilePage >= profileTotalPages}
+                        >
+                          <ChevronRight className='size-4' />
+                        </Button>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
               ) : (
-                <WithdrawalTable
-                  withdrawals={withdrawals}
-                  notes={notes}
-                  onNoteChange={(id, value) =>
-                    setNotes((current) => ({ ...current, [id]: value }))
-                  }
-                  onProcess={handleProcess}
-                />
+                <div className='overflow-x-auto'>
+                  <WithdrawalTable
+                    withdrawals={withdrawals}
+                    notes={notes}
+                    onNoteChange={(id, value) =>
+                      setNotes((current) => ({ ...current, [id]: value }))
+                    }
+                    onProcess={handleProcess}
+                  />
+                </div>
               )}
             </CardContent>
           </Card>

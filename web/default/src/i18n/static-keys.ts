@@ -457,6 +457,7 @@ export const STATIC_I18N_KEYS = [
   'Pending',
   'Paid',
   'Rejected',
+  'Search users by ID, name, or email',
 
   // Sidebar modules
   'Chat Area',
