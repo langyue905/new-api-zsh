@@ -15,6 +15,13 @@ describe('admin agent profile query', () => {
     )
   })
 
+  test('includes profile scope when provided', () => {
+    assert.equal(
+      buildAdminAgentProfilesQuery({ page: 1, pageSize: 20, scope: 'active' }),
+      'p=1&page_size=20&scope=active'
+    )
+  })
+
   test('omits blank keyword', () => {
     assert.equal(
       buildAdminAgentProfilesQuery({ page: 1, pageSize: 50, keyword: '  ' }),

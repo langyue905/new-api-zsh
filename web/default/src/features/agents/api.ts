@@ -23,7 +23,9 @@ import type {
   AgentCommission,
   AgentCustomer,
   AgentProfileView,
+  AgentProfileScope,
   AgentSummary,
+  AgentUsageLog,
   AgentWithdrawal,
   ApiResponse,
   AssignAgentRequest,
@@ -58,6 +60,16 @@ export async function getAgentCommissions(
   return res.data
 }
 
+export async function getAgentUsageLogs(
+  page = 1,
+  pageSize = 10
+): Promise<ApiResponse<PageResponse<AgentUsageLog>>> {
+  const res = await api.get(
+    `/api/agent/usage-logs?p=${page}&page_size=${pageSize}`
+  )
+  return res.data
+}
+
 export async function getAgentWithdrawals(
   page = 1,
   pageSize = 10
@@ -85,9 +97,10 @@ export async function createAgentWithdrawal(
 export async function getAdminAgentProfiles(
   page = 1,
   pageSize = 20,
-  keyword = ''
+  keyword = '',
+  scope: AgentProfileScope = 'active'
 ): Promise<ApiResponse<PageResponse<AgentProfileView>>> {
-  const query = buildAdminAgentProfilesQuery({ page, pageSize, keyword })
+  const query = buildAdminAgentProfilesQuery({ page, pageSize, keyword, scope })
   const res = await api.get(`/api/agent/admin/profiles?${query}`)
   return res.data
 }

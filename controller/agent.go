@@ -118,6 +118,18 @@ func GetAgentCommissions(c *gin.Context) {
 	common.ApiSuccess(c, pageInfo)
 }
 
+func GetAgentUsageLogs(c *gin.Context) {
+	pageInfo := common.GetPageQuery(c)
+	logs, total, err := model.GetAgentUsageLogs(c.GetInt("id"), pageInfo.GetStartIdx(), pageInfo.GetPageSize())
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	pageInfo.SetTotal(int(total))
+	pageInfo.SetItems(logs)
+	common.ApiSuccess(c, pageInfo)
+}
+
 func TransferAgentCommission(c *gin.Context) {
 	id := c.GetInt("id")
 	quota, err := model.TransferAgentCommissionToQuota(id)
@@ -165,7 +177,7 @@ func CreateAgentWithdrawal(c *gin.Context) {
 
 func AdminListAgentProfiles(c *gin.Context) {
 	pageInfo := common.GetPageQuery(c)
-	profiles, total, err := model.ListAgentProfiles(pageInfo.GetStartIdx(), pageInfo.GetPageSize(), c.Query("keyword"))
+	profiles, total, err := model.ListAgentProfiles(pageInfo.GetStartIdx(), pageInfo.GetPageSize(), c.Query("keyword"), c.Query("scope"))
 	if err != nil {
 		common.ApiError(c, err)
 		return

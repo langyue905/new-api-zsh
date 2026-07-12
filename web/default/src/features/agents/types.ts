@@ -75,6 +75,27 @@ export interface AgentCommission {
   created_at: number
 }
 
+export interface AgentUsageLog {
+  id: number
+  user_id: number
+  username: string
+  created_at: number
+  type: number
+  content: string
+  token_name: string
+  model_name: string
+  quota: number
+  prompt_tokens: number
+  completion_tokens: number
+  use_time: number
+  is_stream: boolean
+  channel: number
+  channel_name?: string
+  group: string
+  request_id?: string
+  upstream_request_id?: string
+}
+
 export interface AgentWithdrawal {
   id: number
   agent_user_id: number
@@ -136,3 +157,5 @@ export interface ProcessWithdrawalRequest {
   status: number
   admin_note?: string
 }
+
+export type AgentProfileScope = 'active' | 'all'

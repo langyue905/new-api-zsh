@@ -28,6 +28,11 @@ const (
 	AgentWithdrawalStatusRejected = 3
 )
 
+const (
+	AgentProfileScopeActive = "active"
+	AgentProfileScopeAll    = "all"
+)
+
 type AgentProfile struct {
 	Id                        int   `json:"id"`
 	UserId                    int   `json:"user_id" gorm:"uniqueIndex;not null"`
@@ -545,6 +550,34 @@ func GetAgentCommissions(agentUserId int, startIdx int, num int) ([]AgentCommiss
 	return commissions, total, err
 }
 
+func GetAgentUsageLogs(agentUserId int, startIdx int, num int) ([]*Log, int64, error) {
+	var customerIds []int
+	if err := DB.Model(&User{}).Where("agent_id = ?", agentUserId).Pluck("id", &customerIds).Error; err != nil {
+		return nil, 0, err
+	}
+	if len(customerIds) == 0 {
+		return []*Log{}, 0, nil
+	}
+
+	query := LOG_DB.Where("logs.user_id IN ? AND logs.type = ?", customerIds, LogTypeConsume)
+	var total int64
+	if err := query.Model(&Log{}).Limit(logSearchCountLimit).Count(&total).Error; err != nil {
+		common.SysError("failed to count agent usage logs: " + err.Error())
+		return nil, 0, errors.New("查询日志失败")
+	}
+	order := "logs.id desc"
+	if common.UsingLogDatabase(common.DatabaseTypeClickHouse) {
+		order = clickHouseLogOrder("logs.")
+	}
+	var logs []*Log
+	if err := query.Order(order).Limit(num).Offset(startIdx).Find(&logs).Error; err != nil {
+		common.SysError("failed to search agent usage logs: " + err.Error())
+		return nil, 0, errors.New("查询日志失败")
+	}
+	formatUserLogs(logs, startIdx)
+	return logs, total, nil
+}
+
 func TransferAgentCommissionToQuota(agentUserId int) (int, error) {
 	var transferred int
 	err := DB.Transaction(func(tx *gorm.DB) error {
@@ -729,19 +762,28 @@ func ProcessAgentWithdrawal(id int, adminUserId int, status int, adminNote strin
 	return &withdrawal, nil
 }
 
-func ListAgentProfiles(startIdx int, num int, keyword string) ([]AgentProfileView, int64, error) {
+func normalizeAgentProfileScope(scope string) string {
+	if strings.ToLower(strings.TrimSpace(scope)) == AgentProfileScopeAll {
+		return AgentProfileScopeAll
+	}
+	return AgentProfileScopeActive
+}
+
+func ListAgentProfiles(startIdx int, num int, keyword string, scope string) ([]AgentProfileView, int64, error) {
 	var profiles []AgentProfileView
 	var total int64
-	query := DB.Table("users AS u").Where("u.deleted_at IS NULL")
+	customerStatsJoin := "LEFT JOIN (SELECT agent_id, COUNT(*) AS customer_count FROM users WHERE agent_id > 0 AND deleted_at IS NULL GROUP BY agent_id) AS customer_stats ON customer_stats.agent_id = u.id"
+	query := DB.Table("users AS u").Joins(customerStatsJoin).Where("u.deleted_at IS NULL")
+	if normalizeAgentProfileScope(scope) == AgentProfileScopeActive {
+		query = query.Where("COALESCE(customer_stats.customer_count, 0) > 0")
+	}
 	keyword = strings.TrimSpace(keyword)
 	if keyword != "" {
-		likeCondition := "u.username LIKE ? OR u.email LIKE ? OR u.display_name LIKE ?"
-		likeArgs := []interface{}{"%" + keyword + "%", "%" + keyword + "%", "%" + keyword + "%"}
 		if userId, err := strconv.Atoi(keyword); err == nil {
-			likeCondition = "u.id = ? OR " + likeCondition
-			likeArgs = append([]interface{}{userId}, likeArgs...)
+			query = query.Where("u.id = ?", userId)
+		} else {
+			query = query.Where("(u.username LIKE ? OR u.email LIKE ? OR u.display_name LIKE ?)", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%")
 		}
-		query = query.Where("("+likeCondition+")", likeArgs...)
 	}
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -761,8 +803,7 @@ func ListAgentProfiles(startIdx int, num int, keyword string) ([]AgentProfileVie
 			COALESCE(ap.created_at, 0) AS created_at,
 			COALESCE(ap.updated_at, 0) AS updated_at`, AgentDefaultCommissionRateBps).
 		Joins("LEFT JOIN agent_profiles AS ap ON ap.user_id = u.id").
-		Joins("LEFT JOIN (SELECT agent_id, COUNT(*) AS customer_count FROM users WHERE agent_id > 0 AND deleted_at IS NULL GROUP BY agent_id) AS customer_stats ON customer_stats.agent_id = u.id").
-		Order("u.id desc").
+		Order("CASE WHEN COALESCE(customer_stats.customer_count, 0) > 0 THEN 0 ELSE 1 END, u.id desc").
 		Limit(num).Offset(startIdx).
 		Scan(&profiles).Error
 	if err != nil {

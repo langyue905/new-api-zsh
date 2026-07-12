@@ -450,10 +450,13 @@ export const STATIC_I18N_KEYS = [
   // Agent center and management (dynamic tabs/status labels)
   'Agent Center',
   'Agent Management',
+  'Active Agents',
+  'All Users',
   'Commissions',
   'Customers',
   'Withdrawals',
   'Profiles',
+  'No usage logs',
   'Pending',
   'Paid',
   'Rejected',

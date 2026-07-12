@@ -35,17 +35,97 @@ func TestListAgentProfilesFiltersByKeyword(t *testing.T) {
 	require.NoError(t, DB.Model(&User{}).Where("id = ?", alpha.Id).Update("email", "alpha@example.com").Error)
 	require.NoError(t, DB.Model(&User{}).Where("id = ?", beta.Id).Update("email", "beta@example.com").Error)
 
-	profiles, total, err := ListAgentProfiles(0, 10, "beta@example.com")
+	profiles, total, err := ListAgentProfiles(0, 10, "beta@example.com", "all")
 	require.NoError(t, err)
 	assert.EqualValues(t, 1, total)
 	require.Len(t, profiles, 1)
 	assert.Equal(t, beta.Id, profiles[0].UserId)
 
-	profiles, total, err = ListAgentProfiles(0, 10, strconv.Itoa(alpha.Id))
+	profiles, total, err = ListAgentProfiles(0, 10, strconv.Itoa(alpha.Id), "all")
 	require.NoError(t, err)
 	assert.EqualValues(t, 1, total)
 	require.Len(t, profiles, 1)
 	assert.Equal(t, alpha.Id, profiles[0].UserId)
+}
+
+func TestListAgentProfilesNumericKeywordMatchesOnlyUserID(t *testing.T) {
+	truncateTables(t)
+
+	matchedById := insertAgentTestUser(t, "agent_exact", 0)
+	matchedByName := insertAgentTestUser(t, "agent_21_name", 0)
+	require.NoError(t, DB.Model(&User{}).Where("id = ?", matchedByName.Id).Update("email", "customer21@example.com").Error)
+
+	profiles, total, err := ListAgentProfiles(0, 10, strconv.Itoa(matchedById.Id), "all")
+	require.NoError(t, err)
+	assert.EqualValues(t, 1, total)
+	require.Len(t, profiles, 1)
+	assert.Equal(t, matchedById.Id, profiles[0].UserId)
+}
+
+func TestListAgentProfilesActiveScopeReturnsOnlyAgentsWithCustomers(t *testing.T) {
+	truncateTables(t)
+
+	activeAgent := insertAgentTestUser(t, "agent_active", 0)
+	inactiveAgent := insertAgentTestUser(t, "agent_inactive", 0)
+	insertAgentTestUser(t, "customer_active", activeAgent.Id)
+
+	profiles, total, err := ListAgentProfiles(0, 10, "", "active")
+	require.NoError(t, err)
+	assert.EqualValues(t, 1, total)
+	require.Len(t, profiles, 1)
+	assert.Equal(t, activeAgent.Id, profiles[0].UserId)
+	assert.EqualValues(t, 1, profiles[0].CustomerCount)
+
+	profiles, total, err = ListAgentProfiles(0, 10, "", "all")
+	require.NoError(t, err)
+	assert.EqualValues(t, 3, total)
+	userIds := make([]int, 0, len(profiles))
+	for _, profile := range profiles {
+		userIds = append(userIds, profile.UserId)
+	}
+	assert.Contains(t, userIds, activeAgent.Id)
+	assert.Contains(t, userIds, inactiveAgent.Id)
+}
+
+func TestGetAgentUsageLogsReturnsOnlyBoundCustomerConsumeLogs(t *testing.T) {
+	truncateTables(t)
+
+	agent := insertAgentTestUser(t, "agent_logs", 0)
+	boundCustomer := insertAgentTestUser(t, "customer_logs_bound", agent.Id)
+	otherCustomer := insertAgentTestUser(t, "customer_logs_other", 0)
+	require.NoError(t, LOG_DB.Create(&Log{
+		UserId:    boundCustomer.Id,
+		Username:  boundCustomer.Username,
+		CreatedAt: 100,
+		Type:      LogTypeConsume,
+		ModelName: "gpt-bound",
+		Quota:     1200,
+		Group:     "default",
+	}).Error)
+	require.NoError(t, LOG_DB.Create(&Log{
+		UserId:    boundCustomer.Id,
+		Username:  boundCustomer.Username,
+		CreatedAt: 101,
+		Type:      LogTypeTopup,
+		ModelName: "topup-hidden",
+		Quota:     100,
+	}).Error)
+	require.NoError(t, LOG_DB.Create(&Log{
+		UserId:    otherCustomer.Id,
+		Username:  otherCustomer.Username,
+		CreatedAt: 102,
+		Type:      LogTypeConsume,
+		ModelName: "gpt-other",
+		Quota:     900,
+	}).Error)
+
+	logs, total, err := GetAgentUsageLogs(agent.Id, 0, 10)
+	require.NoError(t, err)
+	assert.EqualValues(t, 1, total)
+	require.Len(t, logs, 1)
+	assert.Equal(t, boundCustomer.Id, logs[0].UserId)
+	assert.Equal(t, LogTypeConsume, logs[0].Type)
+	assert.Equal(t, "gpt-bound", logs[0].ModelName)
 }
 
 func TestRecordAgentCommissionForConsumeLogCreatesDefaultCommission(t *testing.T) {

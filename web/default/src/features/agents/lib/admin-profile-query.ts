@@ -20,6 +20,7 @@ export function buildAdminAgentProfilesQuery(options: {
   page: number
   pageSize: number
   keyword?: string
+  scope?: 'active' | 'all'
 }): string {
   const params = new URLSearchParams({
     p: options.page.toString(),
@@ -28,6 +29,9 @@ export function buildAdminAgentProfilesQuery(options: {
   const keyword = options.keyword?.trim()
   if (keyword) {
     params.set('keyword', keyword)
+  }
+  if (options.scope) {
+    params.set('scope', options.scope)
   }
   return params.toString()
 }

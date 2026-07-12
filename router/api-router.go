@@ -153,6 +153,7 @@ func SetApiRouter(router *gin.Engine) {
 			agentRoute.GET("/summary", controller.GetAgentSummary)
 			agentRoute.GET("/customers", controller.GetAgentCustomers)
 			agentRoute.GET("/commissions", controller.GetAgentCommissions)
+			agentRoute.GET("/usage-logs", controller.GetAgentUsageLogs)
 			agentRoute.GET("/withdrawals", controller.GetAgentWithdrawals)
 			agentRoute.POST("/transfer", middleware.CriticalRateLimit(), controller.TransferAgentCommission)
 			agentRoute.POST("/withdrawals", middleware.CriticalRateLimit(), controller.CreateAgentWithdrawal)

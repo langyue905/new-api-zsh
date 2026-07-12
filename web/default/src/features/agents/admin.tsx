@@ -64,7 +64,11 @@ import {
   processAdminAgentWithdrawal,
   updateAdminAgentProfile,
 } from './api'
-import type { AgentProfileView, AgentWithdrawal } from './types'
+import type {
+  AgentProfileScope,
+  AgentProfileView,
+  AgentWithdrawal,
+} from './types'
 
 const withdrawalStatusLabels: Record<number, string> = {
   1: 'Pending',
@@ -342,6 +346,7 @@ export function AgentAdmin() {
   const [profileTotal, setProfileTotal] = useState(0)
   const [profileKeyword, setProfileKeyword] = useState('')
   const [profileKeywordInput, setProfileKeywordInput] = useState('')
+  const [profileScope, setProfileScope] = useState<AgentProfileScope>('active')
   const [notes, setNotes] = useState<Record<number, string>>({})
   const [customerId, setCustomerId] = useState('')
   const [agentId, setAgentId] = useState('')
@@ -357,7 +362,8 @@ export function AgentAdmin() {
         getAdminAgentProfiles(
           profilePage,
           agentProfilesPageSize,
-          profileKeyword
+          profileKeyword,
+          profileScope
         ),
         getAdminAgentWithdrawals(1, 50, withdrawalStatus),
       ])
@@ -371,7 +377,7 @@ export function AgentAdmin() {
     } finally {
       setLoading(false)
     }
-  }, [profileKeyword, profilePage, withdrawalStatus])
+  }, [profileKeyword, profilePage, profileScope, withdrawalStatus])
 
   useEffect(() => {
     refresh()
@@ -385,6 +391,11 @@ export function AgentAdmin() {
     }
     setProfilePage(1)
     setProfileKeyword(nextKeyword)
+  }
+
+  const handleProfileScopeChange = (scope: AgentProfileScope) => {
+    setProfilePage(1)
+    setProfileScope(scope)
   }
 
   const handleAssign = async () => {
@@ -451,7 +462,7 @@ export function AgentAdmin() {
         </Button>
       </SectionPageLayout.Actions>
       <SectionPageLayout.Content>
-        <div className='flex w-full flex-col gap-4'>
+        <div className='flex h-full min-h-0 w-full flex-col gap-4 overflow-y-auto pr-1'>
           <div className='grid gap-4 xl:grid-cols-[1fr_380px]'>
             <Card>
               <CardHeader>
@@ -522,29 +533,51 @@ export function AgentAdmin() {
                   </Button>
                 </div>
                 {activeTab === 'profiles' ? (
-                  <form
-                    className='flex min-w-0 gap-2 sm:w-[360px]'
-                    onSubmit={(event) => {
-                      event.preventDefault()
-                      void handleProfileSearch()
-                    }}
-                  >
-                    <div className='relative min-w-0 flex-1'>
-                      <Search className='text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2' />
-                      <Input
-                        value={profileKeywordInput}
-                        onChange={(event) =>
-                          setProfileKeywordInput(event.target.value)
+                  <div className='flex min-w-0 flex-col gap-2 sm:flex-row'>
+                    <div className='flex gap-2'>
+                      <Button
+                        type='button'
+                        size='sm'
+                        variant={
+                          profileScope === 'active' ? 'default' : 'outline'
                         }
-                        placeholder={t('Search users by ID, name, or email')}
-                        className='h-7 pl-9'
-                      />
+                        onClick={() => handleProfileScopeChange('active')}
+                      >
+                        {t('Active Agents')}
+                      </Button>
+                      <Button
+                        type='button'
+                        size='sm'
+                        variant={profileScope === 'all' ? 'default' : 'outline'}
+                        onClick={() => handleProfileScopeChange('all')}
+                      >
+                        {t('All Users')}
+                      </Button>
                     </div>
-                    <Button type='submit' size='sm' disabled={loading}>
-                      <Search className='size-3.5' />
-                      {t('Search')}
-                    </Button>
-                  </form>
+                    <form
+                      className='flex min-w-0 gap-2 sm:w-[360px]'
+                      onSubmit={(event) => {
+                        event.preventDefault()
+                        void handleProfileSearch()
+                      }}
+                    >
+                      <div className='relative min-w-0 flex-1'>
+                        <Search className='text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2' />
+                        <Input
+                          value={profileKeywordInput}
+                          onChange={(event) =>
+                            setProfileKeywordInput(event.target.value)
+                          }
+                          placeholder={t('Search users by ID, name, or email')}
+                          className='h-7 pl-9'
+                        />
+                      </div>
+                      <Button type='submit' size='sm' disabled={loading}>
+                        <Search className='size-3.5' />
+                        {t('Search')}
+                      </Button>
+                    </form>
+                  </div>
                 ) : null}
                 {activeTab === 'withdrawals' ? (
                   <NativeSelect

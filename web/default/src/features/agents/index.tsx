@@ -78,6 +78,7 @@ import {
   getAgentCommissions,
   getAgentCustomers,
   getAgentSummary,
+  getAgentUsageLogs,
   getAgentWithdrawals,
   transferAgentCommission,
 } from './api'
@@ -89,6 +90,7 @@ import type {
   AgentCommission,
   AgentCustomer,
   AgentSummary,
+  AgentUsageLog,
   AgentWithdrawal,
 } from './types'
 
@@ -360,12 +362,13 @@ export function AgentCenter() {
   const [summary, setSummary] = useState<AgentSummary | null>(null)
   const [customers, setCustomers] = useState<AgentCustomer[]>([])
   const [commissions, setCommissions] = useState<AgentCommission[]>([])
+  const [usageLogs, setUsageLogs] = useState<AgentUsageLog[]>([])
   const [withdrawals, setWithdrawals] = useState<AgentWithdrawal[]>([])
   const [loading, setLoading] = useState(true)
   const [withdrawalOpen, setWithdrawalOpen] = useState(false)
   const [transferring, setTransferring] = useState(false)
   const [activeTab, setActiveTab] = useState<
-    'commissions' | 'customers' | 'withdrawals'
+    'commissions' | 'customers' | 'usageLogs' | 'withdrawals'
   >('commissions')
 
   const invitationLink = buildAgentLink(summary?.aff_code)
@@ -373,13 +376,19 @@ export function AgentCenter() {
   const refresh = useCallback(async () => {
     setLoading(true)
     try {
-      const [summaryRes, customersRes, commissionsRes, withdrawalsRes] =
-        await Promise.all([
-          getAgentSummary(),
-          getAgentCustomers(1, 10),
-          getAgentCommissions(1, 10),
-          getAgentWithdrawals(1, 10),
-        ])
+      const [
+        summaryRes,
+        customersRes,
+        commissionsRes,
+        usageLogsRes,
+        withdrawalsRes,
+      ] = await Promise.all([
+        getAgentSummary(),
+        getAgentCustomers(1, 10),
+        getAgentCommissions(1, 10),
+        getAgentUsageLogs(1, 10),
+        getAgentWithdrawals(1, 10),
+      ])
       if (summaryRes.success && summaryRes.data) {
         setSummary(summaryRes.data)
       }
@@ -388,6 +397,9 @@ export function AgentCenter() {
       }
       if (commissionsRes.success && commissionsRes.data) {
         setCommissions(commissionsRes.data.items || [])
+      }
+      if (usageLogsRes.success && usageLogsRes.data) {
+        setUsageLogs(usageLogsRes.data.items || [])
       }
       if (withdrawalsRes.success && withdrawalsRes.data) {
         setWithdrawals(withdrawalsRes.data.items || [])
@@ -556,18 +568,25 @@ export function AgentCenter() {
               <CardHeader>
                 <CardTitle>{t('Agent Records')}</CardTitle>
                 <CardAction className='flex gap-1'>
-                  {(['commissions', 'customers', 'withdrawals'] as const).map(
-                    (tab) => (
-                      <Button
-                        key={tab}
-                        size='sm'
-                        variant={activeTab === tab ? 'default' : 'outline'}
-                        onClick={() => setActiveTab(tab)}
-                      >
-                        {t(tab[0].toUpperCase() + tab.slice(1))}
-                      </Button>
-                    )
-                  )}
+                  {(
+                    [
+                      'commissions',
+                      'customers',
+                      'usageLogs',
+                      'withdrawals',
+                    ] as const
+                  ).map((tab) => (
+                    <Button
+                      key={tab}
+                      size='sm'
+                      variant={activeTab === tab ? 'default' : 'outline'}
+                      onClick={() => setActiveTab(tab)}
+                    >
+                      {tab === 'usageLogs'
+                        ? t('Usage Logs')
+                        : t(tab[0].toUpperCase() + tab.slice(1))}
+                    </Button>
+                  ))}
                 </CardAction>
               </CardHeader>
               <CardContent>
@@ -612,6 +631,45 @@ export function AgentCenter() {
                         <TableCell>{row.group}</TableCell>
                         <TableCell>
                           {formatQuotaWithCurrency(row.used_quota)}
+                        </TableCell>
+                        <TableCell>{formatDate(row.created_at)}</TableCell>
+                      </TableRow>
+                    )}
+                  />
+                ) : null}
+                {activeTab === 'usageLogs' ? (
+                  <AgentTable
+                    columns={[
+                      t('Customer'),
+                      t('Model'),
+                      t('Usage'),
+                      t('Tokens'),
+                      t('Time'),
+                    ]}
+                    rows={usageLogs}
+                    emptyText={t('No usage logs')}
+                    renderRow={(row) => (
+                      <TableRow key={row.request_id || row.id}>
+                        <TableCell>
+                          <div className='font-medium'>
+                            {row.username || `#${row.user_id}`}
+                          </div>
+                          <div className='text-muted-foreground text-xs'>
+                            #{row.user_id}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div>{row.model_name || '-'}</div>
+                          <div className='text-muted-foreground text-xs'>
+                            {row.group || '-'}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {formatQuotaWithCurrency(row.quota)}
+                        </TableCell>
+                        <TableCell>
+                          {(row.prompt_tokens || 0) +
+                            (row.completion_tokens || 0)}
                         </TableCell>
                         <TableCell>{formatDate(row.created_at)}</TableCell>
                       </TableRow>
