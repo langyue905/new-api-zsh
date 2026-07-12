@@ -157,5 +157,3 @@ export interface ProcessWithdrawalRequest {
   status: number
   admin_note?: string
 }
-
-export type AgentProfileScope = 'active' | 'all'

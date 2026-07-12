@@ -64,11 +64,7 @@ import {
   processAdminAgentWithdrawal,
   updateAdminAgentProfile,
 } from './api'
-import type {
-  AgentProfileScope,
-  AgentProfileView,
-  AgentWithdrawal,
-} from './types'
+import type { AgentProfileView, AgentWithdrawal } from './types'
 
 const withdrawalStatusLabels: Record<number, string> = {
   1: 'Pending',
@@ -346,7 +342,6 @@ export function AgentAdmin() {
   const [profileTotal, setProfileTotal] = useState(0)
   const [profileKeyword, setProfileKeyword] = useState('')
   const [profileKeywordInput, setProfileKeywordInput] = useState('')
-  const [profileScope, setProfileScope] = useState<AgentProfileScope>('active')
   const [notes, setNotes] = useState<Record<number, string>>({})
   const [customerId, setCustomerId] = useState('')
   const [agentId, setAgentId] = useState('')
@@ -362,8 +357,7 @@ export function AgentAdmin() {
         getAdminAgentProfiles(
           profilePage,
           agentProfilesPageSize,
-          profileKeyword,
-          profileScope
+          profileKeyword
         ),
         getAdminAgentWithdrawals(1, 50, withdrawalStatus),
       ])
@@ -377,7 +371,7 @@ export function AgentAdmin() {
     } finally {
       setLoading(false)
     }
-  }, [profileKeyword, profilePage, profileScope, withdrawalStatus])
+  }, [profileKeyword, profilePage, withdrawalStatus])
 
   useEffect(() => {
     refresh()
@@ -391,11 +385,6 @@ export function AgentAdmin() {
     }
     setProfilePage(1)
     setProfileKeyword(nextKeyword)
-  }
-
-  const handleProfileScopeChange = (scope: AgentProfileScope) => {
-    setProfilePage(1)
-    setProfileScope(scope)
   }
 
   const handleAssign = async () => {
@@ -534,26 +523,6 @@ export function AgentAdmin() {
                 </div>
                 {activeTab === 'profiles' ? (
                   <div className='flex min-w-0 flex-col gap-2 sm:flex-row'>
-                    <div className='flex gap-2'>
-                      <Button
-                        type='button'
-                        size='sm'
-                        variant={
-                          profileScope === 'active' ? 'default' : 'outline'
-                        }
-                        onClick={() => handleProfileScopeChange('active')}
-                      >
-                        {t('Active Agents')}
-                      </Button>
-                      <Button
-                        type='button'
-                        size='sm'
-                        variant={profileScope === 'all' ? 'default' : 'outline'}
-                        onClick={() => handleProfileScopeChange('all')}
-                      >
-                        {t('All Users')}
-                      </Button>
-                    </div>
                     <form
                       className='flex min-w-0 gap-2 sm:w-[360px]'
                       onSubmit={(event) => {

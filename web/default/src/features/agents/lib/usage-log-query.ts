@@ -13,21 +13,13 @@ GNU Affero General Public License for more details.
 
 You should have received a copy of the GNU Affero General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
-
-For commercial licensing, please contact support@quantumnous.com
 */
-export function buildAdminAgentProfilesQuery(options: {
+export function buildAgentUsageLogsQuery(options: {
   page: number
   pageSize: number
-  keyword?: string
 }): string {
-  const params = new URLSearchParams({
+  return new URLSearchParams({
     p: options.page.toString(),
     page_size: options.pageSize.toString(),
-  })
-  const keyword = options.keyword?.trim()
-  if (keyword) {
-    params.set('keyword', keyword)
-  }
-  return params.toString()
+  }).toString()
 }

@@ -19,13 +19,13 @@ For commercial licensing, please contact support@quantumnous.com
 import { api } from '@/lib/api'
 
 import { buildAdminAgentProfilesQuery } from './lib/admin-profile-query'
+import { buildAgentUsageLogsQuery } from './lib/usage-log-query'
 import type {
   AgentCommission,
   AgentCustomer,
-  AgentProfileView,
-  AgentProfileScope,
   AgentSummary,
   AgentUsageLog,
+  AgentProfileView,
   AgentWithdrawal,
   ApiResponse,
   AssignAgentRequest,
@@ -64,9 +64,8 @@ export async function getAgentUsageLogs(
   page = 1,
   pageSize = 10
 ): Promise<ApiResponse<PageResponse<AgentUsageLog>>> {
-  const res = await api.get(
-    `/api/agent/usage-logs?p=${page}&page_size=${pageSize}`
-  )
+  const query = buildAgentUsageLogsQuery({ page, pageSize })
+  const res = await api.get(`/api/agent/usage-logs?${query}`)
   return res.data
 }
 
@@ -97,10 +96,9 @@ export async function createAgentWithdrawal(
 export async function getAdminAgentProfiles(
   page = 1,
   pageSize = 20,
-  keyword = '',
-  scope: AgentProfileScope = 'active'
+  keyword = ''
 ): Promise<ApiResponse<PageResponse<AgentProfileView>>> {
-  const query = buildAdminAgentProfilesQuery({ page, pageSize, keyword, scope })
+  const query = buildAdminAgentProfilesQuery({ page, pageSize, keyword })
   const res = await api.get(`/api/agent/admin/profiles?${query}`)
   return res.data
 }

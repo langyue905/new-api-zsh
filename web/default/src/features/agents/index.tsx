@@ -19,12 +19,14 @@ For commercial licensing, please contact support@quantumnous.com
 import {
   BadgeDollarSign,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Copy,
   RefreshCw,
   Send,
   Upload,
-  Wallet,
   Users,
+  Wallet,
 } from 'lucide-react'
 import {
   type ChangeEvent,
@@ -99,6 +101,8 @@ const withdrawalStatusLabels: Record<number, string> = {
   2: 'Paid',
   3: 'Rejected',
 }
+
+const agentUsageLogsPageSize = 10
 
 function formatRate(rateBps: number) {
   return `${(rateBps / 100).toFixed(0)}%`
@@ -363,6 +367,8 @@ export function AgentCenter() {
   const [customers, setCustomers] = useState<AgentCustomer[]>([])
   const [commissions, setCommissions] = useState<AgentCommission[]>([])
   const [usageLogs, setUsageLogs] = useState<AgentUsageLog[]>([])
+  const [usageLogPage, setUsageLogPage] = useState(1)
+  const [usageLogTotal, setUsageLogTotal] = useState(0)
   const [withdrawals, setWithdrawals] = useState<AgentWithdrawal[]>([])
   const [loading, setLoading] = useState(true)
   const [withdrawalOpen, setWithdrawalOpen] = useState(false)
@@ -386,7 +392,7 @@ export function AgentCenter() {
         getAgentSummary(),
         getAgentCustomers(1, 10),
         getAgentCommissions(1, 10),
-        getAgentUsageLogs(1, 10),
+        getAgentUsageLogs(usageLogPage, agentUsageLogsPageSize),
         getAgentWithdrawals(1, 10),
       ])
       if (summaryRes.success && summaryRes.data) {
@@ -400,6 +406,7 @@ export function AgentCenter() {
       }
       if (usageLogsRes.success && usageLogsRes.data) {
         setUsageLogs(usageLogsRes.data.items || [])
+        setUsageLogTotal(usageLogsRes.data.total || 0)
       }
       if (withdrawalsRes.success && withdrawalsRes.data) {
         setWithdrawals(withdrawalsRes.data.items || [])
@@ -407,7 +414,7 @@ export function AgentCenter() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [usageLogPage])
 
   useEffect(() => {
     refresh()
@@ -422,6 +429,17 @@ export function AgentCenter() {
         100
     )
   }, [summary])
+
+  const usageLogTotalPages = Math.max(
+    1,
+    Math.ceil(usageLogTotal / agentUsageLogsPageSize)
+  )
+  const usageLogDisplayStart =
+    usageLogTotal === 0 ? 0 : (usageLogPage - 1) * agentUsageLogsPageSize + 1
+  const usageLogDisplayEnd = Math.min(
+    usageLogPage * agentUsageLogsPageSize,
+    usageLogTotal
+  )
 
   const handleTransfer = async () => {
     setTransferring(true)
@@ -638,43 +656,94 @@ export function AgentCenter() {
                   />
                 ) : null}
                 {activeTab === 'usageLogs' ? (
-                  <AgentTable
-                    columns={[
-                      t('Customer'),
-                      t('Model'),
-                      t('Usage'),
-                      t('Tokens'),
-                      t('Time'),
-                    ]}
-                    rows={usageLogs}
-                    emptyText={t('No usage logs')}
-                    renderRow={(row) => (
-                      <TableRow key={row.request_id || row.id}>
-                        <TableCell>
-                          <div className='font-medium'>
-                            {row.username || `#${row.user_id}`}
+                  <div className='space-y-3'>
+                    <div className='overflow-x-auto'>
+                      <AgentTable
+                        columns={[
+                          t('Customer'),
+                          t('Model'),
+                          t('Usage'),
+                          t('Tokens'),
+                          t('Time'),
+                        ]}
+                        rows={usageLogs}
+                        emptyText={t('No usage logs')}
+                        renderRow={(row) => (
+                          <TableRow key={row.request_id || row.id}>
+                            <TableCell>
+                              <div className='font-medium'>
+                                {row.username || `#${row.user_id}`}
+                              </div>
+                              <div className='text-muted-foreground text-xs'>
+                                #{row.user_id}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div>{row.model_name || '-'}</div>
+                              <div className='text-muted-foreground text-xs'>
+                                {row.group || '-'}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {formatQuotaWithCurrency(row.quota)}
+                            </TableCell>
+                            <TableCell>
+                              {(row.prompt_tokens || 0) +
+                                (row.completion_tokens || 0)}
+                            </TableCell>
+                            <TableCell>{formatDate(row.created_at)}</TableCell>
+                          </TableRow>
+                        )}
+                      />
+                    </div>
+                    {usageLogTotal > 0 ? (
+                      <div className='flex flex-col items-center gap-3 border-t pt-3 sm:flex-row sm:justify-between'>
+                        <div className='text-muted-foreground text-xs sm:text-sm'>
+                          {t('Showing')} {usageLogDisplayStart}-
+                          {usageLogDisplayEnd} {t('of')} {usageLogTotal}
+                        </div>
+                        <div className='flex items-center gap-2'>
+                          <Button
+                            type='button'
+                            variant='outline'
+                            size='icon-sm'
+                            aria-label={t('Previous page')}
+                            onClick={() =>
+                              setUsageLogPage((current) =>
+                                Math.max(1, current - 1)
+                              )
+                            }
+                            disabled={loading || usageLogPage <= 1}
+                          >
+                            <ChevronLeft className='size-4' />
+                          </Button>
+                          <div className='text-muted-foreground flex min-w-12 items-center justify-center gap-1 text-sm'>
+                            <span className='text-foreground font-medium'>
+                              {usageLogPage}
+                            </span>
+                            <span>/</span>
+                            <span>{usageLogTotalPages}</span>
                           </div>
-                          <div className='text-muted-foreground text-xs'>
-                            #{row.user_id}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div>{row.model_name || '-'}</div>
-                          <div className='text-muted-foreground text-xs'>
-                            {row.group || '-'}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {formatQuotaWithCurrency(row.quota)}
-                        </TableCell>
-                        <TableCell>
-                          {(row.prompt_tokens || 0) +
-                            (row.completion_tokens || 0)}
-                        </TableCell>
-                        <TableCell>{formatDate(row.created_at)}</TableCell>
-                      </TableRow>
-                    )}
-                  />
+                          <Button
+                            type='button'
+                            variant='outline'
+                            size='icon-sm'
+                            aria-label={t('Next page')}
+                            onClick={() =>
+                              setUsageLogPage((current) =>
+                                Math.min(usageLogTotalPages, current + 1)
+                              )
+                            }
+                            disabled={
+                              loading || usageLogPage >= usageLogTotalPages
+                            }
+                          >
+                            <ChevronRight className='size-4' />
+                          </Button>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
                 ) : null}
                 {activeTab === 'withdrawals' ? (
                   <AgentTable
