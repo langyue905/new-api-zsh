@@ -6,6 +6,7 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/bytedance/gopkg/util/gopool"
@@ -28,6 +29,8 @@ const (
 	AgentWithdrawalStatusPaid     = 2
 	AgentWithdrawalStatusRejected = 3
 )
+
+var agentCommissionBackfillLocks sync.Map
 
 const (
 	AgentProfileScopeActive = "active"
@@ -592,6 +595,20 @@ func backfillAgentCommissionsForAgentIfNeeded(agentUserId int, force bool) error
 	return backfillAgentCommissionsForCustomers(customerIds)
 }
 
+func scheduleAgentCommissionBackfill(agentUserId int) {
+	lockValue, _ := agentCommissionBackfillLocks.LoadOrStore(agentUserId, &sync.Mutex{})
+	lock := lockValue.(*sync.Mutex)
+	if !lock.TryLock() {
+		return
+	}
+	gopool.Go(func() {
+		defer lock.Unlock()
+		if err := backfillAgentCommissionsForAgentIfNeeded(agentUserId, false); err != nil {
+			common.SysLog(fmt.Sprintf("failed to backfill agent commissions for user %d: %s", agentUserId, err.Error()))
+		}
+	})
+}
+
 func GetAgentSummary(agentUserId int) (AgentSummary, error) {
 	summary := AgentSummary{MinimumWithdrawalQuota: AgentMinimumWithdrawalQuota()}
 	affCode, _ := EnsureUserAffCode(agentUserId)
@@ -600,10 +617,8 @@ func GetAgentSummary(agentUserId int) (AgentSummary, error) {
 	if err != nil {
 		return summary, err
 	}
-	if err := backfillAgentCommissionsForAgentIfNeeded(agentUserId, false); err != nil {
-		common.SysLog(fmt.Sprintf("failed to backfill agent commissions for user %d: %s", agentUserId, err.Error()))
-	} else if refreshed, err := GetAgentProfileByUserId(agentUserId); err == nil {
-		profile = refreshed
+	if profile.TotalCustomerConsumeQuota == 0 {
+		scheduleAgentCommissionBackfill(agentUserId)
 	}
 	currentRateBps := resolveCurrentAgentRateBps(*profile)
 	nextThreshold, nextRateBps := nextAgentTier(profile.TotalCustomerConsumeQuota, profile.ManualRateBps)

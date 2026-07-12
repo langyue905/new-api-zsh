@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/stretchr/testify/assert"
@@ -188,7 +189,7 @@ func TestAssignAgentCustomerBackfillsExistingConsumeLogs(t *testing.T) {
 	assert.EqualValues(t, 2, count)
 }
 
-func TestGetAgentSummaryBackfillsExistingBoundConsumeLogs(t *testing.T) {
+func TestGetAgentSummarySchedulesExistingBoundConsumeLogBackfill(t *testing.T) {
 	truncateTables(t)
 
 	unit := int(common.QuotaPerUnit)
@@ -209,14 +210,19 @@ func TestGetAgentSummaryBackfillsExistingBoundConsumeLogs(t *testing.T) {
 	expectedCommission := quota * AgentDefaultCommissionRateBps / agentCommissionRateBase
 	summary, err := GetAgentSummary(agent.Id)
 	require.NoError(t, err)
-	assert.Equal(t, int64(quota), summary.TotalCustomerConsumeQuota)
-	assert.Equal(t, expectedCommission, summary.PendingCommissionQuota)
-	assert.Equal(t, expectedCommission, summary.TotalCommissionQuota)
+	assert.EqualValues(t, 1, summary.CustomerCount)
+	assert.EqualValues(t, 0, summary.TotalCustomerConsumeQuota)
+	assert.Equal(t, 0, summary.PendingCommissionQuota)
 
-	summary, err = GetAgentSummary(agent.Id)
-	require.NoError(t, err)
-	assert.Equal(t, int64(quota), summary.TotalCustomerConsumeQuota)
-	assert.Equal(t, expectedCommission, summary.PendingCommissionQuota)
+	require.Eventually(t, func() bool {
+		profile, err := GetAgentProfileByUserId(agent.Id)
+		if err != nil {
+			return false
+		}
+		return profile.TotalCustomerConsumeQuota == int64(quota) &&
+			profile.PendingCommissionQuota == expectedCommission &&
+			profile.TotalCommissionQuota == expectedCommission
+	}, 2*time.Second, 20*time.Millisecond)
 
 	var count int64
 	require.NoError(t, DB.Model(&AgentCommission{}).Where("agent_user_id = ?", agent.Id).Count(&count).Error)
