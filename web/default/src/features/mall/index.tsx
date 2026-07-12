@@ -30,29 +30,37 @@ export function Mall() {
   const crop = MALL_EMBED_CONFIG.cropPx
   const horizontalCrop = crop.left + crop.right
   const verticalCrop = crop.top + crop.bottom
+  const iframeHeight = MALL_EMBED_CONFIG.panelHeightPx + verticalCrop
+  const iframeWidth = MALL_EMBED_CONFIG.panelWidthPx + horizontalCrop
 
   return (
     <SectionPageLayout fixedContent>
       <SectionPageLayout.Title>{t('Mall')}</SectionPageLayout.Title>
       <SectionPageLayout.Content>
-        <div className='relative h-full min-h-0 overflow-hidden bg-transparent'>
-          {loading && (
-            <div className='bg-background/80 text-muted-foreground absolute inset-0 z-10 flex items-center justify-center gap-2 text-sm backdrop-blur-sm'>
-              <Spinner className='size-4' />
-              <span>{t('Loading...')}</span>
-            </div>
-          )}
-          <div className='h-full overflow-hidden bg-transparent'>
+        <div className='h-full min-h-0 overflow-auto bg-transparent'>
+          <div
+            className='relative mx-auto overflow-hidden rounded-xl bg-white shadow-sm'
+            style={{
+              height: MALL_EMBED_CONFIG.panelHeightPx,
+              width: MALL_EMBED_CONFIG.panelWidthPx,
+            }}
+          >
+            {loading && (
+              <div className='bg-background/80 text-muted-foreground absolute inset-0 z-10 flex items-center justify-center gap-2 text-sm backdrop-blur-sm'>
+                <Spinner className='size-4' />
+                <span>{t('Loading...')}</span>
+              </div>
+            )}
             {/* eslint-disable react/iframe-missing-sandbox -- The embedded shop is a cross-origin SPA that needs scripts plus its own same-origin cookies and API calls. */}
             <iframe
               title={t('Mall')}
               src={MALL_EMBED_CONFIG.src}
               className='block border-0 bg-white'
               style={{
-                height: `calc(100% + ${verticalCrop}px)`,
+                height: iframeHeight,
                 minWidth: MALL_EMBED_CONFIG.minDesktopWidthPx + horizontalCrop,
                 transform: `translate(-${crop.left}px, -${crop.top}px)`,
-                width: `calc(100% + ${horizontalCrop}px)`,
+                width: iframeWidth,
               }}
               referrerPolicy='no-referrer-when-downgrade'
               sandbox='allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation allow-downloads'
