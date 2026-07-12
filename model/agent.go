@@ -590,9 +590,6 @@ func backfillAgentCommissionsForAgentIfNeeded(agentUserId int, force bool) error
 	if !profile.Enabled {
 		return nil
 	}
-	if !force && profile.TotalCustomerConsumeQuota > 0 {
-		return nil
-	}
 	customerIds, err := getAgentCustomerIds(agentUserId)
 	if err != nil {
 		return err
@@ -608,6 +605,14 @@ func backfillAgentCommissionsForAgentIfNeeded(agentUserId int, force bool) error
 		return nil
 	}
 	return backfillAgentCommissionsForCustomers(customerIds)
+}
+
+func backfillAgentCommissionsForAgentLocked(agentUserId int, force bool) error {
+	lockValue, _ := agentCommissionBackfillLocks.LoadOrStore(agentUserId, &sync.Mutex{})
+	lock := lockValue.(*sync.Mutex)
+	lock.Lock()
+	defer lock.Unlock()
+	return backfillAgentCommissionsForAgentIfNeeded(agentUserId, force)
 }
 
 func scheduleAgentCommissionBackfill(agentUserId int) {
@@ -628,12 +633,12 @@ func GetAgentSummary(agentUserId int) (AgentSummary, error) {
 	summary := AgentSummary{MinimumWithdrawalQuota: AgentMinimumWithdrawalQuota()}
 	affCode, _ := EnsureUserAffCode(agentUserId)
 	summary.AffCode = affCode
+	if err := backfillAgentCommissionsForAgentLocked(agentUserId, false); err != nil {
+		common.SysLog(fmt.Sprintf("failed to backfill agent commissions before summary for user %d: %s", agentUserId, err.Error()))
+	}
 	profile, err := EnsureAgentProfile(agentUserId)
 	if err != nil {
 		return summary, err
-	}
-	if profile.TotalCustomerConsumeQuota == 0 {
-		scheduleAgentCommissionBackfill(agentUserId)
 	}
 	currentRateBps := resolveCurrentAgentRateBps(*profile)
 	nextThreshold, nextRateBps := nextAgentTier(profile.TotalCustomerConsumeQuota, profile.ManualRateBps)
@@ -685,6 +690,9 @@ func GetAgentCustomers(agentUserId int, startIdx int, num int) ([]AgentCustomer,
 }
 
 func GetAgentCommissions(agentUserId int, startIdx int, num int) ([]AgentCommissionView, int64, error) {
+	if err := backfillAgentCommissionsForAgentLocked(agentUserId, false); err != nil {
+		common.SysLog(fmt.Sprintf("failed to backfill agent commissions before listing for user %d: %s", agentUserId, err.Error()))
+	}
 	var commissions []AgentCommission
 	var total int64
 	query := DB.Model(&AgentCommission{}).Where("agent_user_id = ? AND commission_quota > 0", agentUserId)

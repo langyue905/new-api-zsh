@@ -4,7 +4,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/stretchr/testify/assert"
@@ -189,7 +188,7 @@ func TestAssignAgentCustomerBackfillsExistingConsumeLogs(t *testing.T) {
 	assert.EqualValues(t, 2, count)
 }
 
-func TestGetAgentSummarySchedulesExistingBoundConsumeLogBackfill(t *testing.T) {
+func TestGetAgentSummaryBackfillsExistingBoundConsumeLogs(t *testing.T) {
 	truncateTables(t)
 
 	unit := int(common.QuotaPerUnit)
@@ -211,22 +210,59 @@ func TestGetAgentSummarySchedulesExistingBoundConsumeLogBackfill(t *testing.T) {
 	summary, err := GetAgentSummary(agent.Id)
 	require.NoError(t, err)
 	assert.EqualValues(t, 1, summary.CustomerCount)
-	assert.EqualValues(t, 0, summary.TotalCustomerConsumeQuota)
-	assert.Equal(t, 0, summary.PendingCommissionQuota)
-
-	require.Eventually(t, func() bool {
-		profile, err := GetAgentProfileByUserId(agent.Id)
-		if err != nil {
-			return false
-		}
-		return profile.TotalCustomerConsumeQuota == int64(quota) &&
-			profile.PendingCommissionQuota == expectedCommission &&
-			profile.TotalCommissionQuota == expectedCommission
-	}, 2*time.Second, 20*time.Millisecond)
+	assert.Equal(t, int64(quota), summary.TotalCustomerConsumeQuota)
+	assert.Equal(t, expectedCommission, summary.PendingCommissionQuota)
+	assert.Equal(t, expectedCommission, summary.TotalCommissionQuota)
 
 	var count int64
 	require.NoError(t, DB.Model(&AgentCommission{}).Where("agent_user_id = ?", agent.Id).Count(&count).Error)
 	assert.EqualValues(t, 1, count)
+}
+
+func TestGetAgentCommissionsBackfillsNewConsumeLogsAfterPartialCommissionState(t *testing.T) {
+	truncateTables(t)
+
+	unit := int(common.QuotaPerUnit)
+	agent := insertAgentTestUser(t, "agent_partial_backfill", 0)
+	customer := insertAgentTestUser(t, "customer_partial_backfill", agent.Id)
+	firstQuota := 10 * unit
+	secondQuota := 20 * unit
+	existingLog := Log{
+		UserId:    customer.Id,
+		Username:  customer.Username,
+		CreatedAt: 100,
+		Type:      LogTypeConsume,
+		Quota:     firstQuota,
+		RequestId: "req-agent-partial-backfill-existing",
+		ModelName: "gpt-existing",
+		Group:     "default",
+	}
+	require.NoError(t, LOG_DB.Create(&existingLog).Error)
+	require.NoError(t, RecordAgentCommissionForConsumeLog(&existingLog))
+
+	missedLog := Log{
+		UserId:    customer.Id,
+		Username:  customer.Username,
+		CreatedAt: 200,
+		Type:      LogTypeConsume,
+		ModelName: "gpt-missed",
+		Quota:     secondQuota,
+		Group:     "default",
+		RequestId: "req-agent-partial-backfill-missed",
+	}
+	require.NoError(t, LOG_DB.Create(&missedLog).Error)
+
+	commissions, total, err := GetAgentCommissions(agent.Id, 0, 10)
+	require.NoError(t, err)
+	assert.EqualValues(t, 2, total)
+	require.Len(t, commissions, 2)
+	assert.Equal(t, "gpt-missed", commissions[0].ModelName)
+
+	summary, err := GetAgentSummary(agent.Id)
+	require.NoError(t, err)
+	assert.Equal(t, int64(firstQuota+secondQuota), summary.TotalCustomerConsumeQuota)
+	expectedCommission := (firstQuota + secondQuota) * AgentDefaultCommissionRateBps / agentCommissionRateBase
+	assert.Equal(t, expectedCommission, summary.PendingCommissionQuota)
 }
 
 func TestRecordAgentCommissionForConsumeLogCreatesDefaultCommission(t *testing.T) {
