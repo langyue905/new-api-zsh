@@ -25,6 +25,10 @@ export function isPaymentQRCodeWithinLimit(dataUrl: string): boolean {
   return dataUrl.length <= PAYMENT_QR_CODE_MAX_LENGTH
 }
 
+export function isPaymentQRCodeImageDataUrl(dataUrl: string): boolean {
+  return /^data:image\/[a-zA-Z0-9.+-]+;base64,/.test(dataUrl)
+}
+
 export function fitPaymentQRCodeImageSize(
   width: number,
   height: number,

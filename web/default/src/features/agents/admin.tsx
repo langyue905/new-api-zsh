@@ -44,6 +44,13 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
@@ -64,6 +71,7 @@ import {
   processAdminAgentWithdrawal,
   updateAdminAgentProfile,
 } from './api'
+import { isPaymentQRCodeImageDataUrl } from './lib/payment-qr-code'
 import type { AgentProfileView, AgentWithdrawal } from './types'
 
 const withdrawalStatusLabels: Record<number, string> = {
@@ -226,109 +234,140 @@ function WithdrawalTable(props: {
   onProcess: (id: number, status: number) => Promise<void>
 }) {
   const { t } = useTranslation()
+  const [previewQRCode, setPreviewQRCode] = useState('')
+  const canPreviewQRCode = isPaymentQRCodeImageDataUrl(previewQRCode)
+
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>{t('Agent')}</TableHead>
-          <TableHead>{t('Amount')}</TableHead>
-          <TableHead>{t('Payment')}</TableHead>
-          <TableHead>{t('Status')}</TableHead>
-          <TableHead>{t('Admin Note')}</TableHead>
-          <TableHead>{t('Actions')}</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {props.withdrawals.length === 0 ? (
+    <>
+      <Table>
+        <TableHeader>
           <TableRow>
-            <TableCell
-              colSpan={6}
-              className='text-muted-foreground h-20 text-center'
-            >
-              {t('No withdrawals')}
-            </TableCell>
+            <TableHead>{t('Agent')}</TableHead>
+            <TableHead>{t('Amount')}</TableHead>
+            <TableHead>{t('Payment')}</TableHead>
+            <TableHead>{t('Status')}</TableHead>
+            <TableHead>{t('Admin Note')}</TableHead>
+            <TableHead>{t('Actions')}</TableHead>
           </TableRow>
-        ) : (
-          props.withdrawals.map((withdrawal) => (
-            <TableRow key={withdrawal.id}>
-              <TableCell>
-                <div className='font-medium'>
-                  {withdrawal.display_name || withdrawal.username || '-'}
-                </div>
-                <div className='text-muted-foreground text-xs'>
-                  #{withdrawal.agent_user_id}
-                </div>
-              </TableCell>
-              <TableCell>
-                {formatQuotaWithCurrency(withdrawal.amount_quota)}
-              </TableCell>
-              <TableCell>
-                <div>{withdrawal.payment_account || '-'}</div>
-                {withdrawal.payment_qr_code ? (
-                  <Button
-                    size='xs'
-                    variant='link'
-                    className='h-5 px-0'
-                    onClick={() =>
-                      window.open(withdrawal.payment_qr_code, '_blank')
-                    }
-                  >
-                    <Link2 className='size-3' />
-                    {t('QR Code')}
-                  </Button>
-                ) : null}
-              </TableCell>
-              <TableCell>
-                <Badge variant={getStatusVariant(withdrawal.status)}>
-                  {t(withdrawalStatusLabels[withdrawal.status] || 'Unknown')}
-                </Badge>
-                <div className='text-muted-foreground mt-1 text-xs'>
-                  {formatDate(withdrawal.created_at)}
-                </div>
-              </TableCell>
-              <TableCell>
-                {withdrawal.status === 1 ? (
-                  <Input
-                    value={props.notes[withdrawal.id] || ''}
-                    onChange={(event) =>
-                      props.onNoteChange(withdrawal.id, event.target.value)
-                    }
-                    placeholder={t('Optional')}
-                  />
-                ) : (
-                  withdrawal.admin_note || '-'
-                )}
-              </TableCell>
-              <TableCell>
-                {withdrawal.status === 1 ? (
-                  <div className='flex gap-2'>
-                    <Button
-                      size='sm'
-                      onClick={() => props.onProcess(withdrawal.id, 2)}
-                    >
-                      <CheckCircle2 className='size-4' />
-                      {t('Paid')}
-                    </Button>
-                    <Button
-                      size='sm'
-                      variant='destructive'
-                      onClick={() => props.onProcess(withdrawal.id, 3)}
-                    >
-                      <XCircle className='size-4' />
-                      {t('Reject')}
-                    </Button>
-                  </div>
-                ) : (
-                  <span className='text-muted-foreground text-sm'>
-                    {formatDate(withdrawal.processed_at)}
-                  </span>
-                )}
+        </TableHeader>
+        <TableBody>
+          {props.withdrawals.length === 0 ? (
+            <TableRow>
+              <TableCell
+                colSpan={6}
+                className='text-muted-foreground h-20 text-center'
+              >
+                {t('No withdrawals')}
               </TableCell>
             </TableRow>
-          ))
-        )}
-      </TableBody>
-    </Table>
+          ) : (
+            props.withdrawals.map((withdrawal) => (
+              <TableRow key={withdrawal.id}>
+                <TableCell>
+                  <div className='font-medium'>
+                    {withdrawal.display_name || withdrawal.username || '-'}
+                  </div>
+                  <div className='text-muted-foreground text-xs'>
+                    #{withdrawal.agent_user_id}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  {formatQuotaWithCurrency(withdrawal.amount_quota)}
+                </TableCell>
+                <TableCell>
+                  <div>{withdrawal.payment_account || '-'}</div>
+                  {withdrawal.payment_qr_code ? (
+                    <Button
+                      size='xs'
+                      variant='link'
+                      className='h-5 px-0'
+                      onClick={() =>
+                        setPreviewQRCode(withdrawal.payment_qr_code)
+                      }
+                    >
+                      <Link2 className='size-3' />
+                      {t('QR Code')}
+                    </Button>
+                  ) : null}
+                </TableCell>
+                <TableCell>
+                  <Badge variant={getStatusVariant(withdrawal.status)}>
+                    {t(withdrawalStatusLabels[withdrawal.status] || 'Unknown')}
+                  </Badge>
+                  <div className='text-muted-foreground mt-1 text-xs'>
+                    {formatDate(withdrawal.created_at)}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  {withdrawal.status === 1 ? (
+                    <Input
+                      value={props.notes[withdrawal.id] || ''}
+                      onChange={(event) =>
+                        props.onNoteChange(withdrawal.id, event.target.value)
+                      }
+                      placeholder={t('Optional')}
+                    />
+                  ) : (
+                    withdrawal.admin_note || '-'
+                  )}
+                </TableCell>
+                <TableCell>
+                  {withdrawal.status === 1 ? (
+                    <div className='flex gap-2'>
+                      <Button
+                        size='sm'
+                        onClick={() => props.onProcess(withdrawal.id, 2)}
+                      >
+                        <CheckCircle2 className='size-4' />
+                        {t('Paid')}
+                      </Button>
+                      <Button
+                        size='sm'
+                        variant='destructive'
+                        onClick={() => props.onProcess(withdrawal.id, 3)}
+                      >
+                        <XCircle className='size-4' />
+                        {t('Reject')}
+                      </Button>
+                    </div>
+                  ) : (
+                    <span className='text-muted-foreground text-sm'>
+                      {formatDate(withdrawal.processed_at)}
+                    </span>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+      <Dialog
+        open={Boolean(previewQRCode)}
+        onOpenChange={(open) => !open && setPreviewQRCode('')}
+      >
+        <DialogContent className='sm:max-w-sm'>
+          <DialogHeader>
+            <DialogTitle>{t('Payment QR Code')}</DialogTitle>
+            <DialogDescription>
+              {t('Withdrawal payment code')}
+            </DialogDescription>
+          </DialogHeader>
+          <div className='flex justify-center rounded-md border p-3'>
+            {canPreviewQRCode ? (
+              <img
+                src={previewQRCode}
+                alt={t('Payment QR Code')}
+                className='max-h-[70vh] max-w-full object-contain'
+              />
+            ) : (
+              <div className='text-muted-foreground py-12 text-sm'>
+                {t('Unable to preview QR code')}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
 

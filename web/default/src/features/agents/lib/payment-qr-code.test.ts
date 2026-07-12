@@ -4,6 +4,7 @@ import { describe, test } from 'node:test'
 import {
   PAYMENT_QR_CODE_MAX_LENGTH,
   fitPaymentQRCodeImageSize,
+  isPaymentQRCodeImageDataUrl,
   isPaymentQRCodeWithinLimit,
 } from './payment-qr-code.ts'
 
@@ -28,5 +29,18 @@ describe('agent payment QR code helpers', () => {
       width: 200,
       height: 100,
     })
+  })
+
+  test('detects previewable QR code image data URLs', () => {
+    assert.equal(isPaymentQRCodeImageDataUrl('data:image/png;base64,abc'), true)
+    assert.equal(
+      isPaymentQRCodeImageDataUrl('data:image/jpeg;base64,abc'),
+      true
+    )
+    assert.equal(
+      isPaymentQRCodeImageDataUrl('data:text/plain;base64,abc'),
+      false
+    )
+    assert.equal(isPaymentQRCodeImageDataUrl(''), false)
   })
 })
