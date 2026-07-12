@@ -128,12 +128,12 @@ func TestGetAgentUsageLogsReturnsOnlyBoundCustomerConsumeLogs(t *testing.T) {
 	assert.Equal(t, "gpt-bound", logs[0].ModelName)
 }
 
-func TestAssignAgentCustomerBackfillsExistingConsumeLogs(t *testing.T) {
+func TestAssignAgentCustomerDoesNotBackfillExistingConsumeLogs(t *testing.T) {
 	truncateTables(t)
 
 	unit := int(common.QuotaPerUnit)
-	agent := insertAgentTestUser(t, "agent_backfill", 0)
-	customer := insertAgentTestUser(t, "customer_backfill", 0)
+	agent := insertAgentTestUser(t, "agent_no_backfill", 0)
+	customer := insertAgentTestUser(t, "customer_no_backfill", 0)
 	firstQuota := 50 * unit
 	secondQuota := 20 * unit
 	records := []Log{
@@ -142,20 +142,20 @@ func TestAssignAgentCustomerBackfillsExistingConsumeLogs(t *testing.T) {
 			Username:  customer.Username,
 			CreatedAt: 100,
 			Type:      LogTypeConsume,
-			ModelName: "gpt-backfill-1",
+			ModelName: "gpt-old-1",
 			Quota:     firstQuota,
 			Group:     "default",
-			RequestId: "req-agent-backfill-1",
+			RequestId: "req-agent-no-backfill-1",
 		},
 		{
 			UserId:    customer.Id,
 			Username:  customer.Username,
 			CreatedAt: 101,
 			Type:      LogTypeConsume,
-			ModelName: "gpt-backfill-2",
+			ModelName: "gpt-old-2",
 			Quota:     secondQuota,
 			Group:     "default",
-			RequestId: "req-agent-backfill-2",
+			RequestId: "req-agent-no-backfill-2",
 		},
 	}
 	for i := range records {
@@ -166,65 +166,69 @@ func TestAssignAgentCustomerBackfillsExistingConsumeLogs(t *testing.T) {
 	require.NoError(t, AssignAgentCustomer(customer.Id, agent.Id))
 	var count int64
 	require.NoError(t, DB.Model(&AgentCommission{}).Where("agent_user_id = ?", agent.Id).Count(&count).Error)
-	assert.EqualValues(t, 2, count)
+	assert.EqualValues(t, 0, count)
 
-	expectedQuota := firstQuota + secondQuota
-	expectedCommission := expectedQuota * AgentDefaultCommissionRateBps / agentCommissionRateBase
 	summary, err := GetAgentSummary(agent.Id)
 	require.NoError(t, err)
-	assert.Equal(t, int64(expectedQuota), summary.TotalCustomerConsumeQuota)
-	assert.Equal(t, expectedCommission, summary.PendingCommissionQuota)
-	assert.Equal(t, expectedCommission, summary.TotalCommissionQuota)
+	assert.Equal(t, int64(0), summary.TotalCustomerConsumeQuota)
+	assert.Equal(t, 0, summary.PendingCommissionQuota)
+	assert.Equal(t, 0, summary.TotalCommissionQuota)
 
-	require.NoError(t, DB.Model(&AgentCommission{}).Where("agent_user_id = ?", agent.Id).Count(&count).Error)
-	assert.EqualValues(t, 2, count)
+	newQuota := 30 * unit
+	require.NoError(t, RecordAgentCommissionForConsumeLog(&Log{
+		UserId:    customer.Id,
+		Type:      LogTypeConsume,
+		Quota:     newQuota,
+		RequestId: "req-agent-no-backfill-new",
+		ModelName: "gpt-new",
+		Group:     "default",
+	}))
 
-	require.NoError(t, AssignAgentCustomer(customer.Id, agent.Id))
 	summary, err = GetAgentSummary(agent.Id)
 	require.NoError(t, err)
-	assert.Equal(t, int64(expectedQuota), summary.TotalCustomerConsumeQuota)
+	expectedCommission := newQuota * AgentDefaultCommissionRateBps / agentCommissionRateBase
+	assert.Equal(t, int64(newQuota), summary.TotalCustomerConsumeQuota)
 	assert.Equal(t, expectedCommission, summary.PendingCommissionQuota)
 	require.NoError(t, DB.Model(&AgentCommission{}).Where("agent_user_id = ?", agent.Id).Count(&count).Error)
-	assert.EqualValues(t, 2, count)
+	assert.EqualValues(t, 1, count)
 }
 
-func TestGetAgentSummaryBackfillsExistingBoundConsumeLogs(t *testing.T) {
+func TestGetAgentSummaryDoesNotBackfillExistingBoundConsumeLogs(t *testing.T) {
 	truncateTables(t)
 
 	unit := int(common.QuotaPerUnit)
-	agent := insertAgentTestUser(t, "agent_summary_backfill", 0)
-	customer := insertAgentTestUser(t, "customer_summary_backfill", agent.Id)
+	agent := insertAgentTestUser(t, "agent_summary_no_backfill", 0)
+	customer := insertAgentTestUser(t, "customer_summary_no_backfill", agent.Id)
 	quota := 30 * unit
 	require.NoError(t, LOG_DB.Create(&Log{
 		UserId:    customer.Id,
 		Username:  customer.Username,
 		CreatedAt: 100,
 		Type:      LogTypeConsume,
-		ModelName: "gpt-summary-backfill",
+		ModelName: "gpt-summary-old",
 		Quota:     quota,
 		Group:     "default",
-		RequestId: "req-agent-summary-backfill",
+		RequestId: "req-agent-summary-no-backfill",
 	}).Error)
 
-	expectedCommission := quota * AgentDefaultCommissionRateBps / agentCommissionRateBase
 	summary, err := GetAgentSummary(agent.Id)
 	require.NoError(t, err)
 	assert.EqualValues(t, 1, summary.CustomerCount)
-	assert.Equal(t, int64(quota), summary.TotalCustomerConsumeQuota)
-	assert.Equal(t, expectedCommission, summary.PendingCommissionQuota)
-	assert.Equal(t, expectedCommission, summary.TotalCommissionQuota)
+	assert.Equal(t, int64(0), summary.TotalCustomerConsumeQuota)
+	assert.Equal(t, 0, summary.PendingCommissionQuota)
+	assert.Equal(t, 0, summary.TotalCommissionQuota)
 
 	var count int64
 	require.NoError(t, DB.Model(&AgentCommission{}).Where("agent_user_id = ?", agent.Id).Count(&count).Error)
-	assert.EqualValues(t, 1, count)
+	assert.EqualValues(t, 0, count)
 }
 
-func TestGetAgentCommissionsBackfillsNewConsumeLogsAfterPartialCommissionState(t *testing.T) {
+func TestGetAgentCommissionsDoesNotBackfillMissingConsumeLogsAfterPartialCommissionState(t *testing.T) {
 	truncateTables(t)
 
 	unit := int(common.QuotaPerUnit)
-	agent := insertAgentTestUser(t, "agent_partial_backfill", 0)
-	customer := insertAgentTestUser(t, "customer_partial_backfill", agent.Id)
+	agent := insertAgentTestUser(t, "agent_partial_no_backfill", 0)
+	customer := insertAgentTestUser(t, "customer_partial_no_backfill", agent.Id)
 	firstQuota := 10 * unit
 	secondQuota := 20 * unit
 	existingLog := Log{
@@ -233,7 +237,7 @@ func TestGetAgentCommissionsBackfillsNewConsumeLogsAfterPartialCommissionState(t
 		CreatedAt: 100,
 		Type:      LogTypeConsume,
 		Quota:     firstQuota,
-		RequestId: "req-agent-partial-backfill-existing",
+		RequestId: "req-agent-partial-no-backfill-existing",
 		ModelName: "gpt-existing",
 		Group:     "default",
 	}
@@ -248,20 +252,20 @@ func TestGetAgentCommissionsBackfillsNewConsumeLogsAfterPartialCommissionState(t
 		ModelName: "gpt-missed",
 		Quota:     secondQuota,
 		Group:     "default",
-		RequestId: "req-agent-partial-backfill-missed",
+		RequestId: "req-agent-partial-no-backfill-missed",
 	}
 	require.NoError(t, LOG_DB.Create(&missedLog).Error)
 
 	commissions, total, err := GetAgentCommissions(agent.Id, 0, 10)
 	require.NoError(t, err)
-	assert.EqualValues(t, 2, total)
-	require.Len(t, commissions, 2)
-	assert.Equal(t, "gpt-missed", commissions[0].ModelName)
+	assert.EqualValues(t, 1, total)
+	require.Len(t, commissions, 1)
+	assert.Equal(t, "gpt-existing", commissions[0].ModelName)
 
 	summary, err := GetAgentSummary(agent.Id)
 	require.NoError(t, err)
-	assert.Equal(t, int64(firstQuota+secondQuota), summary.TotalCustomerConsumeQuota)
-	expectedCommission := (firstQuota + secondQuota) * AgentDefaultCommissionRateBps / agentCommissionRateBase
+	assert.Equal(t, int64(firstQuota), summary.TotalCustomerConsumeQuota)
+	expectedCommission := firstQuota * AgentDefaultCommissionRateBps / agentCommissionRateBase
 	assert.Equal(t, expectedCommission, summary.PendingCommissionQuota)
 }
 

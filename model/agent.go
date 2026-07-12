@@ -6,7 +6,6 @@ import (
 	"math"
 	"strconv"
 	"strings"
-	"sync"
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/bytedance/gopkg/util/gopool"
@@ -21,7 +20,6 @@ const (
 
 	agentCommissionRateBase     = 10000
 	agentPaymentQRCodeMaxLength = 60000
-	agentCommissionBackfillSize = 200
 )
 
 const (
@@ -29,8 +27,6 @@ const (
 	AgentWithdrawalStatusPaid     = 2
 	AgentWithdrawalStatusRejected = 3
 )
-
-var agentCommissionBackfillLocks sync.Map
 
 const (
 	AgentProfileScopeActive = "active"
@@ -398,11 +394,6 @@ func AssignAgentCustomer(customerUserId int, agentUserId int) error {
 	}); err != nil {
 		return err
 	}
-	if agentUserId > 0 {
-		if err := backfillAgentCommissionsForAgentIfNeeded(agentUserId, true); err != nil {
-			common.SysLog(fmt.Sprintf("failed to backfill agent commissions after assigning customer %d to agent %d: %s", customerUserId, agentUserId, err.Error()))
-		}
-	}
 	return nil
 }
 
@@ -527,115 +518,10 @@ func RecordAgentCommissionForConsumeLog(log *Log) error {
 	})
 }
 
-func getAgentCustomerIds(agentUserId int) ([]int, error) {
-	if agentUserId <= 0 {
-		return nil, errors.New("代理用户ID无效")
-	}
-	var customerIds []int
-	if err := DB.Model(&User{}).Where("agent_id = ?", agentUserId).Pluck("id", &customerIds).Error; err != nil {
-		return nil, err
-	}
-	return customerIds, nil
-}
-
-func sumAgentCustomerConsumeQuota(customerIds []int) (int64, error) {
-	if len(customerIds) == 0 {
-		return 0, nil
-	}
-	var result struct {
-		Quota int64 `gorm:"column:quota"`
-	}
-	err := LOG_DB.Model(&Log{}).
-		Select("COALESCE(SUM(quota), 0) AS quota").
-		Where("logs.user_id IN ? AND logs.type = ? AND logs.quota > 0", customerIds, LogTypeConsume).
-		Scan(&result).Error
-	return result.Quota, err
-}
-
-func backfillAgentCommissionsForCustomers(customerIds []int) error {
-	if len(customerIds) == 0 {
-		return nil
-	}
-	order := "logs.id asc"
-	if common.UsingLogDatabase(common.DatabaseTypeClickHouse) {
-		order = "logs.created_at asc, logs.request_id asc"
-	}
-	for offset := 0; ; offset += agentCommissionBackfillSize {
-		var logs []*Log
-		err := LOG_DB.Model(&Log{}).
-			Where("logs.user_id IN ? AND logs.type = ? AND logs.quota > 0", customerIds, LogTypeConsume).
-			Order(order).
-			Limit(agentCommissionBackfillSize).
-			Offset(offset).
-			Find(&logs).Error
-		if err != nil {
-			return err
-		}
-		for _, log := range logs {
-			if err := RecordAgentCommissionForConsumeLog(log); err != nil {
-				return err
-			}
-		}
-		if len(logs) < agentCommissionBackfillSize {
-			return nil
-		}
-	}
-}
-
-func backfillAgentCommissionsForAgentIfNeeded(agentUserId int, force bool) error {
-	profile, err := EnsureAgentProfile(agentUserId)
-	if err != nil {
-		return err
-	}
-	if !profile.Enabled {
-		return nil
-	}
-	customerIds, err := getAgentCustomerIds(agentUserId)
-	if err != nil {
-		return err
-	}
-	if len(customerIds) == 0 {
-		return nil
-	}
-	consumeQuota, err := sumAgentCustomerConsumeQuota(customerIds)
-	if err != nil {
-		return err
-	}
-	if consumeQuota <= profile.TotalCustomerConsumeQuota {
-		return nil
-	}
-	return backfillAgentCommissionsForCustomers(customerIds)
-}
-
-func backfillAgentCommissionsForAgentLocked(agentUserId int, force bool) error {
-	lockValue, _ := agentCommissionBackfillLocks.LoadOrStore(agentUserId, &sync.Mutex{})
-	lock := lockValue.(*sync.Mutex)
-	lock.Lock()
-	defer lock.Unlock()
-	return backfillAgentCommissionsForAgentIfNeeded(agentUserId, force)
-}
-
-func scheduleAgentCommissionBackfill(agentUserId int) {
-	lockValue, _ := agentCommissionBackfillLocks.LoadOrStore(agentUserId, &sync.Mutex{})
-	lock := lockValue.(*sync.Mutex)
-	if !lock.TryLock() {
-		return
-	}
-	gopool.Go(func() {
-		defer lock.Unlock()
-		if err := backfillAgentCommissionsForAgentIfNeeded(agentUserId, false); err != nil {
-			common.SysLog(fmt.Sprintf("failed to backfill agent commissions for user %d: %s", agentUserId, err.Error()))
-		}
-	})
-}
-
 func GetAgentSummary(agentUserId int) (AgentSummary, error) {
 	summary := AgentSummary{MinimumWithdrawalQuota: AgentMinimumWithdrawalQuota()}
 	affCode, _ := EnsureUserAffCode(agentUserId)
 	summary.AffCode = affCode
-	if err := backfillAgentCommissionsForAgentLocked(agentUserId, false); err != nil {
-		common.SysLog(fmt.Sprintf("failed to backfill agent commissions before summary for user %d: %s", agentUserId, err.Error()))
-	}
 	profile, err := EnsureAgentProfile(agentUserId)
 	if err != nil {
 		return summary, err
@@ -690,9 +576,6 @@ func GetAgentCustomers(agentUserId int, startIdx int, num int) ([]AgentCustomer,
 }
 
 func GetAgentCommissions(agentUserId int, startIdx int, num int) ([]AgentCommissionView, int64, error) {
-	if err := backfillAgentCommissionsForAgentLocked(agentUserId, false); err != nil {
-		common.SysLog(fmt.Sprintf("failed to backfill agent commissions before listing for user %d: %s", agentUserId, err.Error()))
-	}
 	var commissions []AgentCommission
 	var total int64
 	query := DB.Model(&AgentCommission{}).Where("agent_user_id = ? AND commission_quota > 0", agentUserId)
