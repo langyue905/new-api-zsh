@@ -31,6 +31,7 @@ import {
   Radio,
   ServerCog,
   Settings,
+  ShoppingCart,
   Ticket,
   User,
   Users,
@@ -109,6 +110,13 @@ export function useSidebarData(): SidebarData {
             title: t('Wallet'),
             url: '/wallet',
             icon: Wallet,
+          },
+          {
+            title: t('Mall'),
+            url: 'https://pay.ldxp.cn/shop/baixiaosheng',
+            configUrls: ['/mall'],
+            icon: ShoppingCart,
+            external: true,
           },
           {
             title: t('Agent Center'),

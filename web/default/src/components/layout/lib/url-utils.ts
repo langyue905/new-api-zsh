@@ -38,6 +38,17 @@ function urlToString(url: LinkProps['to'] | (string & {})): string | null {
   return null
 }
 
+export function isExternalHref(href: unknown): href is string {
+  if (typeof href !== 'string') return false
+
+  try {
+    const url = new URL(href)
+    return url.protocol === 'http:' || url.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
 /**
  * Normalize URL by removing query parameters and trailing slashes
  */
@@ -87,8 +98,9 @@ export function checkIsActive(
         }
         return false
       })
-    )
+    ) {
       return true
+    }
   }
 
   // For regular link items, check the item's URL

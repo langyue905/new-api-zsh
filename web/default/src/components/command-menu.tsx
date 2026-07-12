@@ -31,11 +31,13 @@ import {
   CommandList,
   CommandSeparator,
 } from '@/components/ui/command'
+// eslint-disable-next-line import/no-cycle
 import { useSearch } from '@/context/search-provider'
 import { useTheme } from '@/context/theme-provider'
 import { useSidebarData } from '@/hooks/use-sidebar-data'
 
 import { getNavGroupsForPath } from './layout/lib/sidebar-view-registry'
+import { isExternalHref } from './layout/lib/url-utils'
 import { ScrollArea } from './ui/scroll-area'
 
 export function CommandMenu() {
@@ -58,6 +60,22 @@ export function CommandMenu() {
     [setOpen]
   )
 
+  const openNavUrl = React.useCallback(
+    (url: unknown, external?: boolean) => {
+      if (typeof url !== 'string') {
+        return
+      }
+
+      if (external || isExternalHref(url)) {
+        window.open(url, '_blank', 'noopener,noreferrer')
+        return
+      }
+
+      void navigate({ to: url as never })
+    },
+    [navigate]
+  )
+
   return (
     <CommandDialog modal open={open} onOpenChange={setOpen}>
       <Command>
@@ -67,14 +85,16 @@ export function CommandMenu() {
             <CommandEmpty>{t('No results found.')}</CommandEmpty>
             {navGroups.map((group) => (
               <CommandGroup key={group.id || group.title} heading={group.title}>
-                {group.items.map((navItem, i) => {
-                  if (navItem.url)
+                {group.items.map((navItem) => {
+                  if (navItem.url) {
                     return (
                       <CommandItem
-                        key={`${navItem.url}-${i}`}
+                        key={`${navItem.title}-${String(navItem.url)}`}
                         value={navItem.title}
                         onSelect={() => {
-                          runCommand(() => navigate({ to: navItem.url }))
+                          runCommand(() =>
+                            openNavUrl(navItem.url, navItem.external)
+                          )
                         }}
                       >
                         <div className='flex size-4 items-center justify-center'>
@@ -83,13 +103,16 @@ export function CommandMenu() {
                         {navItem.title}
                       </CommandItem>
                     )
+                  }
 
-                  return navItem.items?.map((subItem, i) => (
+                  return navItem.items?.map((subItem) => (
                     <CommandItem
-                      key={`${navItem.title}-${subItem.url}-${i}`}
+                      key={`${navItem.title}-${subItem.title}-${String(subItem.url)}`}
                       value={`${navItem.title}-${subItem.url}`}
                       onSelect={() => {
-                        runCommand(() => navigate({ to: subItem.url }))
+                        runCommand(() =>
+                          openNavUrl(subItem.url, subItem.external)
+                        )
                       }}
                     >
                       <div className='flex size-4 items-center justify-center'>
