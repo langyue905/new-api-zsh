@@ -41,6 +41,7 @@ import {
 import { useTranslation } from 'react-i18next'
 
 import type { SidebarData } from '@/components/layout/types'
+import { MALL_LINK_CONFIG } from '@/features/mall/content'
 import { ROLE } from '@/lib/roles'
 
 /**
@@ -114,8 +115,8 @@ export function useSidebarData(): SidebarData {
           },
           {
             title: t('Mall'),
-            url: '/mall',
             icon: ShoppingCart,
+            ...MALL_LINK_CONFIG,
           },
           {
             title: t('Customer Service'),

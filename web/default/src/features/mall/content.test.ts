@@ -19,19 +19,14 @@ For commercial licensing, please contact support@quantumnous.com
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 
-import { MALL_EMBED_CONFIG } from './content.ts'
+import { MALL_LINK_CONFIG } from './content.ts'
 
-describe('mall embed config', () => {
-  test('embeds the linked shop and crops to the product panel', () => {
-    assert.equal(MALL_EMBED_CONFIG.src, 'https://pay.ldxp.cn/shop/baixiaosheng')
-    assert.deepEqual(MALL_EMBED_CONFIG.cropPx, {
-      bottom: 110,
-      left: 241,
-      right: 216,
-      top: 226,
+describe('mall navigation config', () => {
+  test('opens the linked shop as an external destination', () => {
+    assert.deepEqual(MALL_LINK_CONFIG, {
+      configUrls: ['/mall'],
+      external: true,
+      url: 'https://pay.ldxp.cn/shop/baixiaosheng',
     })
-    assert.equal(MALL_EMBED_CONFIG.panelHeightPx, 770)
-    assert.equal(MALL_EMBED_CONFIG.panelWidthPx, 1367)
-    assert.equal(MALL_EMBED_CONFIG.minDesktopWidthPx, 1180)
   })
 })

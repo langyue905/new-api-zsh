@@ -16,15 +16,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-export const MALL_EMBED_CONFIG = {
-  src: 'https://pay.ldxp.cn/shop/baixiaosheng',
-  cropPx: {
-    bottom: 110,
-    left: 241,
-    right: 216,
-    top: 226,
-  },
-  panelHeightPx: 770,
-  panelWidthPx: 1367,
-  minDesktopWidthPx: 1180,
+export const MALL_LINK_CONFIG = {
+  configUrls: ['/mall'] as string[],
+  external: true,
+  url: 'https://pay.ldxp.cn/shop/baixiaosheng',
 } as const
