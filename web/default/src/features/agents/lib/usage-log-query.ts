@@ -16,10 +16,12 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 */
 export function buildAgentUsageLogsQuery(options: {
   page: number
-  pageSize: number
+  pageSize?: number
 }): string {
   return new URLSearchParams({
     p: options.page.toString(),
-    page_size: options.pageSize.toString(),
+    page_size: (options.pageSize ?? AGENT_RECORDS_DEFAULT_PAGE_SIZE).toString(),
   }).toString()
 }
+
+export const AGENT_RECORDS_DEFAULT_PAGE_SIZE = 50

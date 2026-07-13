@@ -16,6 +16,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { useQuery } from '@tanstack/react-query'
+import type { ColumnDef, PaginationState } from '@tanstack/react-table'
 import {
   BadgeDollarSign,
   CheckCircle2,
@@ -38,6 +40,11 @@ import {
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
+import {
+  DataTablePage,
+  DataTableRow,
+  useDataTable,
+} from '@/components/data-table'
 import { SectionPageLayout } from '@/components/layout'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -70,6 +77,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Textarea } from '@/components/ui/textarea'
+import { useMediaQuery } from '@/hooks'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 import { formatQuotaWithCurrency } from '@/lib/currency'
 
@@ -85,12 +93,16 @@ import {
   PAYMENT_QR_CODE_INPUT_MAX_BYTES,
   preparePaymentQRCodeDataUrl,
 } from './lib/payment-qr-code'
+import { AGENT_RECORDS_DEFAULT_PAGE_SIZE } from './lib/usage-log-query'
 import type {
   AgentCommission,
   AgentCustomer,
   AgentSummary,
   AgentWithdrawal,
+  PageResponse,
 } from './types'
+
+const AGENT_CENTER_REFRESH_MS = 30_000
 
 const withdrawalStatusLabels: Record<number, string> = {
   1: 'Pending',
@@ -352,6 +364,143 @@ function AgentTable<T>(props: {
   )
 }
 
+const emptyCommissionPage: PageResponse<AgentCommission> = {
+  items: [],
+  page: 1,
+  page_size: AGENT_RECORDS_DEFAULT_PAGE_SIZE,
+  total: 0,
+}
+
+function AgentCommissionsTable({ refreshKey }: { refreshKey: number }) {
+  const { t } = useTranslation()
+  const isMobile = useMediaQuery('(max-width: 640px)')
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: isMobile ? 20 : AGENT_RECORDS_DEFAULT_PAGE_SIZE,
+  })
+
+  useEffect(() => {
+    setPagination((current) => ({
+      ...current,
+      pageIndex: 0,
+      pageSize: isMobile ? 20 : AGENT_RECORDS_DEFAULT_PAGE_SIZE,
+    }))
+  }, [isMobile])
+
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: [
+      'agent-commissions',
+      pagination.pageIndex,
+      pagination.pageSize,
+      refreshKey,
+    ],
+    queryFn: async () => {
+      const res = await getAgentCommissions(
+        pagination.pageIndex + 1,
+        pagination.pageSize
+      )
+      if (!res.success) {
+        toast.error(res.message || t('Failed to load logs'))
+        return emptyCommissionPage
+      }
+      return res.data || emptyCommissionPage
+    },
+    placeholderData: (previousData) => previousData,
+  })
+
+  const columns = useMemo<ColumnDef<AgentCommission>[]>(
+    () => [
+      {
+        id: 'customer',
+        header: t('Customer'),
+        cell: ({ row }) => (
+          <div>
+            <div className='font-medium'>
+              {row.original.customer_display_name ||
+                row.original.customer_username ||
+                `#${row.original.customer_user_id}`}
+            </div>
+            <div className='text-muted-foreground text-xs'>
+              #{row.original.customer_user_id}
+            </div>
+          </div>
+        ),
+      },
+      {
+        id: 'model',
+        header: t('Model'),
+        cell: ({ row }) => (
+          <div>
+            <div>{row.original.model_name || '-'}</div>
+            <div className='text-muted-foreground text-xs'>
+              {row.original.group || '-'}
+            </div>
+          </div>
+        ),
+      },
+      {
+        id: 'usage',
+        header: t('Usage'),
+        cell: ({ row }) => formatQuotaWithCurrency(row.original.quota),
+      },
+      {
+        id: 'tokens',
+        header: t('Tokens'),
+        cell: ({ row }) =>
+          (row.original.prompt_tokens || 0) +
+          (row.original.completion_tokens || 0),
+      },
+      {
+        id: 'commission',
+        header: t('Commission'),
+        cell: ({ row }) =>
+          formatQuotaWithCurrency(row.original.commission_quota),
+      },
+      {
+        id: 'rate',
+        header: t('Rate'),
+        cell: ({ row }) => formatRate(row.original.commission_rate_bps),
+      },
+      {
+        id: 'time',
+        header: t('Time'),
+        cell: ({ row }) =>
+          formatDate(
+            row.original.consume_created_at || row.original.created_at
+          ),
+      },
+    ],
+    [t]
+  )
+
+  const { table } = useDataTable({
+    data: data?.items || [],
+    columns,
+    columnVisibilityStorageKey: 'agent-center:commissions:column-visibility',
+    enableRowSelection: false,
+    manualPagination: true,
+    onPaginationChange: setPagination,
+    pagination,
+    totalCount: data?.total || 0,
+  })
+
+  return (
+    <DataTablePage
+      table={table}
+      columns={columns}
+      isLoading={isLoading}
+      isFetching={isFetching}
+      emptyTitle={t('No commission records')}
+      emptyDescription={t(
+        'No usage logs available. Logs will appear here once API calls are made.'
+      )}
+      toolbar={null}
+      renderRow={(row) => <DataTableRow key={row.id} row={row} />}
+      fixedHeight={false}
+    />
+  )
+}
+
 export function AgentCenter() {
   const { t } = useTranslation()
   const { copyToClipboard } = useCopyToClipboard({
@@ -359,46 +508,67 @@ export function AgentCenter() {
   })
   const [summary, setSummary] = useState<AgentSummary | null>(null)
   const [customers, setCustomers] = useState<AgentCustomer[]>([])
-  const [commissions, setCommissions] = useState<AgentCommission[]>([])
   const [withdrawals, setWithdrawals] = useState<AgentWithdrawal[]>([])
   const [loading, setLoading] = useState(true)
   const [withdrawalOpen, setWithdrawalOpen] = useState(false)
   const [transferring, setTransferring] = useState(false)
+  const [recordsRefreshKey, setRecordsRefreshKey] = useState(0)
   const [activeTab, setActiveTab] = useState<
     'commissions' | 'customers' | 'withdrawals'
   >('commissions')
 
   const invitationLink = buildAgentLink(summary?.aff_code)
 
-  const refresh = useCallback(async () => {
-    setLoading(true)
+  const refresh = useCallback(async (showLoading = true) => {
+    if (showLoading) {
+      setLoading(true)
+    }
     try {
-      const [summaryRes, customersRes, commissionsRes, withdrawalsRes] =
-        await Promise.all([
+      const [summaryResult, customersResult, withdrawalsResult] =
+        await Promise.allSettled([
           getAgentSummary(),
-          getAgentCustomers(1, 10),
-          getAgentCommissions(1, 10),
-          getAgentWithdrawals(1, 10),
+          getAgentCustomers(),
+          getAgentWithdrawals(),
         ])
-      if (summaryRes.success && summaryRes.data) {
-        setSummary(summaryRes.data)
+      if (
+        summaryResult.status === 'fulfilled' &&
+        summaryResult.value.success &&
+        summaryResult.value.data
+      ) {
+        setSummary(summaryResult.value.data)
       }
-      if (customersRes.success && customersRes.data) {
-        setCustomers(customersRes.data.items || [])
+      if (
+        customersResult.status === 'fulfilled' &&
+        customersResult.value.success &&
+        customersResult.value.data
+      ) {
+        setCustomers(customersResult.value.data.items || [])
       }
-      if (commissionsRes.success && commissionsRes.data) {
-        setCommissions(commissionsRes.data.items || [])
+      if (
+        withdrawalsResult.status === 'fulfilled' &&
+        withdrawalsResult.value.success &&
+        withdrawalsResult.value.data
+      ) {
+        setWithdrawals(withdrawalsResult.value.data.items || [])
       }
-      if (withdrawalsRes.success && withdrawalsRes.data) {
-        setWithdrawals(withdrawalsRes.data.items || [])
-      }
+      setRecordsRefreshKey((key) => key + 1)
     } finally {
-      setLoading(false)
+      if (showLoading) {
+        setLoading(false)
+      }
     }
   }, [])
 
   useEffect(() => {
     refresh()
+  }, [refresh])
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      void refresh(false)
+    }, AGENT_CENTER_REFRESH_MS)
+
+    return () => window.clearInterval(timer)
   }, [refresh])
 
   const progressValue = useMemo(() => {
@@ -431,7 +601,11 @@ export function AgentCenter() {
       <SectionPageLayout>
         <SectionPageLayout.Title>{t('Agent Center')}</SectionPageLayout.Title>
         <SectionPageLayout.Actions>
-          <Button variant='outline' onClick={refresh} disabled={loading}>
+          <Button
+            variant='outline'
+            onClick={() => refresh()}
+            disabled={loading}
+          >
             <RefreshCw className='size-4' />
             {t('Refresh')}
           </Button>
@@ -572,59 +746,7 @@ export function AgentCenter() {
               </CardHeader>
               <CardContent>
                 {activeTab === 'commissions' ? (
-                  <div className='overflow-x-auto'>
-                    <AgentTable
-                      columns={[
-                        t('Customer'),
-                        t('Model'),
-                        t('Usage'),
-                        t('Tokens'),
-                        t('Commission'),
-                        t('Rate'),
-                        t('Time'),
-                      ]}
-                      rows={commissions}
-                      emptyText={t('No commission records')}
-                      renderRow={(row) => (
-                        <TableRow key={row.id}>
-                          <TableCell>
-                            <div className='font-medium'>
-                              {row.customer_display_name ||
-                                row.customer_username ||
-                                `#${row.customer_user_id}`}
-                            </div>
-                            <div className='text-muted-foreground text-xs'>
-                              #{row.customer_user_id}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div>{row.model_name || '-'}</div>
-                            <div className='text-muted-foreground text-xs'>
-                              {row.group || '-'}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {formatQuotaWithCurrency(row.quota)}
-                          </TableCell>
-                          <TableCell>
-                            {(row.prompt_tokens || 0) +
-                              (row.completion_tokens || 0)}
-                          </TableCell>
-                          <TableCell>
-                            {formatQuotaWithCurrency(row.commission_quota)}
-                          </TableCell>
-                          <TableCell>
-                            {formatRate(row.commission_rate_bps)}
-                          </TableCell>
-                          <TableCell>
-                            {formatDate(
-                              row.consume_created_at || row.created_at
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    />
-                  </div>
+                  <AgentCommissionsTable refreshKey={recordsRefreshKey} />
                 ) : null}
                 {activeTab === 'customers' ? (
                   <AgentTable

@@ -17,9 +17,17 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 
-import { buildAgentUsageLogsQuery } from './usage-log-query.ts'
+import {
+  AGENT_RECORDS_DEFAULT_PAGE_SIZE,
+  buildAgentUsageLogsQuery,
+} from './usage-log-query.ts'
 
 describe('agent usage log query', () => {
+  test('uses a wider default page size for agent record tables', () => {
+    assert.equal(AGENT_RECORDS_DEFAULT_PAGE_SIZE, 50)
+    assert.equal(buildAgentUsageLogsQuery({ page: 1 }), 'p=1&page_size=50')
+  })
+
   test('includes pagination parameters', () => {
     assert.equal(
       buildAgentUsageLogsQuery({ page: 3, pageSize: 20 }),

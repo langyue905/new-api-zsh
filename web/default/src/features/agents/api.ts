@@ -19,7 +19,10 @@ For commercial licensing, please contact support@quantumnous.com
 import { api } from '@/lib/api'
 
 import { buildAdminAgentProfilesQuery } from './lib/admin-profile-query'
-import { buildAgentUsageLogsQuery } from './lib/usage-log-query'
+import {
+  AGENT_RECORDS_DEFAULT_PAGE_SIZE,
+  buildAgentUsageLogsQuery,
+} from './lib/usage-log-query'
 import type {
   AgentCommission,
   AgentCustomer,
@@ -42,7 +45,7 @@ export async function getAgentSummary(): Promise<ApiResponse<AgentSummary>> {
 
 export async function getAgentCustomers(
   page = 1,
-  pageSize = 10
+  pageSize = AGENT_RECORDS_DEFAULT_PAGE_SIZE
 ): Promise<ApiResponse<PageResponse<AgentCustomer>>> {
   const res = await api.get(
     `/api/agent/customers?p=${page}&page_size=${pageSize}`
@@ -52,7 +55,7 @@ export async function getAgentCustomers(
 
 export async function getAgentCommissions(
   page = 1,
-  pageSize = 10
+  pageSize = AGENT_RECORDS_DEFAULT_PAGE_SIZE
 ): Promise<ApiResponse<PageResponse<AgentCommission>>> {
   const res = await api.get(
     `/api/agent/commissions?p=${page}&page_size=${pageSize}`
@@ -62,7 +65,7 @@ export async function getAgentCommissions(
 
 export async function getAgentUsageLogs(
   page = 1,
-  pageSize = 10
+  pageSize = AGENT_RECORDS_DEFAULT_PAGE_SIZE
 ): Promise<ApiResponse<PageResponse<AgentUsageLog>>> {
   const query = buildAgentUsageLogsQuery({ page, pageSize })
   const res = await api.get(`/api/agent/usage-logs?${query}`)
@@ -71,7 +74,7 @@ export async function getAgentUsageLogs(
 
 export async function getAgentWithdrawals(
   page = 1,
-  pageSize = 10
+  pageSize = AGENT_RECORDS_DEFAULT_PAGE_SIZE
 ): Promise<ApiResponse<PageResponse<AgentWithdrawal>>> {
   const res = await api.get(
     `/api/agent/withdrawals?p=${page}&page_size=${pageSize}`
