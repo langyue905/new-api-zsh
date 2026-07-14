@@ -304,41 +304,48 @@ func TestRecordAgentCommissionForConsumeLogCreatesDefaultCommission(t *testing.T
 }
 
 func TestRecordAgentCommissionForConsumeLogUsesTierAfterCurrentConsumption(t *testing.T) {
-	truncateTables(t)
-
-	unit := int(common.QuotaPerUnit)
-	agent := insertAgentTestUser(t, "agent_tier", 0)
-	customer := insertAgentTestUser(t, "customer_tier", agent.Id)
-
-	events := []struct {
-		requestId string
-		quota     int
-		rateBps   int
+	unit := int64(common.QuotaPerUnit)
+	testCases := []struct {
+		name        string
+		totalBefore int64
+		wantRateBps int
 	}{
-		{requestId: "req-tier-99", quota: 99 * unit, rateBps: AgentDefaultCommissionRateBps},
-		{requestId: "req-tier-100", quota: 1 * unit, rateBps: AgentTierTwoCommissionRateBps},
-		{requestId: "req-tier-1000", quota: 900 * unit, rateBps: AgentTierThreeCommissionRateBps},
+		{name: "below tier two", totalBefore: 98 * unit, wantRateBps: AgentDefaultCommissionRateBps},
+		{name: "reach tier two", totalBefore: 99 * unit, wantRateBps: AgentTierTwoCommissionRateBps},
+		{name: "remain tier two at one thousand", totalBefore: 999 * unit, wantRateBps: AgentTierTwoCommissionRateBps},
+		{name: "reach tier three at ten thousand", totalBefore: 9999 * unit, wantRateBps: AgentTierThreeCommissionRateBps},
 	}
 
-	for _, event := range events {
-		err := RecordAgentCommissionForConsumeLog(&Log{
-			UserId:    customer.Id,
-			Type:      LogTypeConsume,
-			Quota:     event.quota,
-			RequestId: event.requestId,
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			truncateTables(t)
+			agent := insertAgentTestUser(t, "agent_tier_"+testCase.name, 0)
+			customer := insertAgentTestUser(t, "customer_tier_"+testCase.name, agent.Id)
+			profile, err := EnsureAgentProfile(agent.Id)
+			require.NoError(t, err)
+			require.NoError(t, DB.Model(&AgentProfile{}).Where("id = ?", profile.Id).
+				Update("total_customer_consume_quota", testCase.totalBefore).Error)
+
+			requestId := "req-agent-tier-" + testCase.name
+			err = RecordAgentCommissionForConsumeLog(&Log{
+				UserId:    customer.Id,
+				Type:      LogTypeConsume,
+				Quota:     int(unit),
+				RequestId: requestId,
+			})
+			require.NoError(t, err)
+
+			var commission AgentCommission
+			require.NoError(t, DB.First(&commission, "request_id = ?", requestId).Error)
+			assert.Equal(t, testCase.wantRateBps, commission.CommissionRateBps)
+			assert.Equal(t, int(unit)*testCase.wantRateBps/agentCommissionRateBase, commission.CommissionQuota)
+
+			profile, err = GetAgentProfileByUserId(agent.Id)
+			require.NoError(t, err)
+			assert.Equal(t, testCase.totalBefore+unit, profile.TotalCustomerConsumeQuota)
+			assert.Equal(t, testCase.wantRateBps, profile.CurrentRateBps)
 		})
-		require.NoError(t, err)
-
-		var commission AgentCommission
-		require.NoError(t, DB.First(&commission, "request_id = ?", event.requestId).Error)
-		assert.Equal(t, event.rateBps, commission.CommissionRateBps)
-		assert.Equal(t, event.quota*event.rateBps/agentCommissionRateBase, commission.CommissionQuota)
 	}
-
-	profile, err := GetAgentProfileByUserId(agent.Id)
-	require.NoError(t, err)
-	assert.Equal(t, int64(1000*unit), profile.TotalCustomerConsumeQuota)
-	assert.Equal(t, AgentTierThreeCommissionRateBps, profile.CurrentRateBps)
 }
 
 func TestRecordAgentCommissionForConsumeLogIsIdempotentByRequestID(t *testing.T) {

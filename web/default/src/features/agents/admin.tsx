@@ -499,7 +499,7 @@ export function AgentAdmin() {
                   {t('Agent Rules')}
                 </CardTitle>
                 <CardDescription>
-                  {t('Default 7%, upgrade to 10% at 100, then 13% at 1000.')}
+                  {t('Default 7%, upgrade to 10% at 100, then 13% at 10000.')}
                 </CardDescription>
               </CardHeader>
             </Card>

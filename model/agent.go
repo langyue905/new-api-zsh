@@ -169,7 +169,7 @@ func AgentTierTwoThresholdQuota() int64 {
 }
 
 func AgentTierThreeThresholdQuota() int64 {
-	return int64(1000 * common.QuotaPerUnit)
+	return int64(10000 * common.QuotaPerUnit)
 }
 
 func AgentMinimumWithdrawalQuota() int {
