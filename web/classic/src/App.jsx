@@ -55,6 +55,12 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 const About = lazy(() => import('./pages/About'));
 const UserAgreement = lazy(() => import('./pages/UserAgreement'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
+const ImagePlayground = lazy(
+  () => import('./pages/CreativePlayground/ImagePlayground'),
+);
+const VideoPlayground = lazy(
+  () => import('./pages/CreativePlayground/VideoPlayground'),
+);
 
 function DynamicOAuth2Callback() {
   const { provider } = useParams();
@@ -152,6 +158,26 @@ function App() {
           element={
             <PrivateRoute>
               <Playground />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path='/console/image'
+          element={
+            <PrivateRoute>
+              <Suspense fallback={<Loading />}>
+                <ImagePlayground />
+              </Suspense>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path='/console/video'
+          element={
+            <PrivateRoute>
+              <Suspense fallback={<Loading />}>
+                <VideoPlayground />
+              </Suspense>
             </PrivateRoute>
           }
         />

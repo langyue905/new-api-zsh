@@ -48,6 +48,8 @@ const routerMap = {
   models: '/console/models',
   deployment: '/console/deployment',
   playground: '/console/playground',
+  image: '/console/image',
+  video: '/console/video',
   personal: '/console/personal',
 };
 
@@ -200,13 +202,30 @@ const SiderBar = ({ onNavigate = () => {} }) => {
     return filteredItems;
   }, [isAdmin(), isRoot(), t, isModuleVisible]);
 
-  const chatMenuItems = useMemo(() => {
+  const creativeMenuItems = useMemo(() => {
     const items = [
       {
         text: t('操练场'),
         itemKey: 'playground',
         to: '/playground',
       },
+      {
+        text: t('图像'),
+        itemKey: 'image',
+        to: '/console/image',
+      },
+      {
+        text: t('视频'),
+        itemKey: 'video',
+        to: '/console/video',
+      },
+    ];
+
+    return items.filter((item) => isModuleVisible('chat', item.itemKey));
+  }, [t, isModuleVisible]);
+
+  const chatMenuItems = useMemo(() => {
+    const items = [
       {
         text: t('聊天'),
         itemKey: 'chat',
@@ -215,12 +234,7 @@ const SiderBar = ({ onNavigate = () => {} }) => {
     ];
 
     // 根据配置过滤项目
-    const filteredItems = items.filter((item) => {
-      const configVisible = isModuleVisible('chat', item.itemKey);
-      return configVisible;
-    });
-
-    return filteredItems;
+    return items.filter((item) => isModuleVisible('chat', item.itemKey));
   }, [chatItems, t, isModuleVisible]);
 
   // 更新路由映射，添加聊天路由
@@ -443,14 +457,27 @@ const SiderBar = ({ onNavigate = () => {} }) => {
             setOpenedKeys(data.openKeys);
           }}
         >
-          {/* 聊天区域 */}
-          {hasSectionVisibleModules('chat') && (
+          {/* 创作区域 */}
+          {creativeMenuItems.length > 0 && (
             <div className='sidebar-section'>
               {!collapsed && (
-                <div className='sidebar-group-label'>{t('聊天')}</div>
+                <div className='sidebar-group-label'>{t('创作')}</div>
               )}
-              {chatMenuItems.map((item) => renderSubItem(item))}
+              {creativeMenuItems.map((item) => renderSubItem(item))}
             </div>
+          )}
+
+          {/* 聊天区域 */}
+          {chatMenuItems.length > 0 && (
+            <>
+              <Divider className='sidebar-divider' />
+              <div className='sidebar-section'>
+                {!collapsed && (
+                  <div className='sidebar-group-label'>{t('聊天')}</div>
+                )}
+                {chatMenuItems.map((item) => renderSubItem(item))}
+              </div>
+            </>
           )}
 
           {/* 控制台区域 */}
