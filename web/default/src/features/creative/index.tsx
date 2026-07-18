@@ -37,7 +37,7 @@ export function ImagePlayground() {
 
   return (
     <EmbeddedPlayground
-      src={`/playgrounds/image/index.html?${search.toString()}`}
+      src={`/playgrounds/image/?${search.toString()}`}
       title='GPT Image Playground'
     />
   )
@@ -46,7 +46,7 @@ export function ImagePlayground() {
 export function VideoPlayground() {
   return (
     <EmbeddedPlayground
-      src='/playgrounds/video/index.html'
+      src='/playgrounds/video/'
       title='Sora 2 Playground'
     />
   )
