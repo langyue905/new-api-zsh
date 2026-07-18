@@ -25,14 +25,14 @@ export const MALL_LINK_CONFIG = {
 export const MALL_EMBED_CONFIG = {
   src: 'https://pay.ldxp.cn/shop/baixiaosheng',
   cropPx: {
-    bottom: 110,
-    left: 241,
-    right: 216,
-    top: 226,
+    bottom: 143,
+    left: 335,
+    right: 350,
+    top: 238,
   },
-  panelHeightPx: 770,
-  panelWidthPx: 1367,
-  minDesktopWidthPx: 1180,
+  panelHeightPx: 725,
+  panelWidthPx: 1139,
+  minDesktopWidthPx: 1139,
 } as const
 
 export const MALL_IFRAME_SANDBOX =

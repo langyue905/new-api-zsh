@@ -51,14 +51,14 @@ describe('mall embed config', () => {
     assert.ok(config)
     assert.equal(config.src, 'https://pay.ldxp.cn/shop/baixiaosheng')
     assert.deepEqual(config.cropPx, {
-      bottom: 110,
-      left: 241,
-      right: 216,
-      top: 226,
+      bottom: 143,
+      left: 335,
+      right: 350,
+      top: 238,
     })
-    assert.equal(config.panelHeightPx, 770)
-    assert.equal(config.panelWidthPx, 1367)
-    assert.equal(config.minDesktopWidthPx, 1180)
+    assert.equal(config.panelHeightPx, 725)
+    assert.equal(config.panelWidthPx, 1139)
+    assert.equal(config.minDesktopWidthPx, 1139)
   })
 
   test('keeps desktop cropping separate from the complete mobile layout', () => {
@@ -71,8 +71,8 @@ describe('mall embed config', () => {
     assert.ok(getLayout)
     assert.deepEqual(getLayout(false), {
       height: '1106px',
-      minWidth: '1637px',
-      transform: 'translate(-241px, -226px)',
+      minWidth: '1824px',
+      transform: 'translate(-335px, -238px)',
       width: '1824px',
     })
     assert.deepEqual(getLayout(true), {
