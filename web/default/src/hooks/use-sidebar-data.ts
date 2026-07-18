@@ -25,6 +25,7 @@ import {
   FlaskConical,
   Handshake,
   Headset,
+  Image as ImageIcon,
   Key,
   LayoutDashboard,
   ListTodo,
@@ -36,6 +37,7 @@ import {
   Ticket,
   User,
   Users,
+  Video,
   Wallet,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -63,6 +65,16 @@ export function useSidebarData(): SidebarData {
             title: t('Playground'),
             url: '/playground',
             icon: FlaskConical,
+          },
+          {
+            title: t('Image'),
+            url: '/image',
+            icon: ImageIcon,
+          },
+          {
+            title: t('Video'),
+            url: '/video',
+            icon: Video,
           },
           {
             title: t('Chat'),
