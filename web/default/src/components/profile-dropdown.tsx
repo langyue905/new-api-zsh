@@ -110,7 +110,7 @@ export function ProfileDropdown() {
           {isWalletVisible && (
             <DropdownMenuItem onClick={() => navigate({ to: '/wallet' })}>
               <Wallet className='size-4' />
-              {t('Wallet')}
+              {t('Recharge Center')}
             </DropdownMenuItem>
           )}
 

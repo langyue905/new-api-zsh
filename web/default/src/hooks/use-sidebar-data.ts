@@ -121,12 +121,12 @@ export function useSidebarData(): SidebarData {
         title: t('Personal'),
         items: [
           {
-            title: t('Wallet'),
+            title: t('Recharge Center'),
             url: '/wallet',
             icon: Wallet,
           },
           {
-            title: t('Mall'),
+            title: t('Shanhai Treasure Pavilion'),
             icon: ShoppingCart,
             ...MALL_LINK_CONFIG,
           },

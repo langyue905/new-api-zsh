@@ -121,11 +121,11 @@ export function SidebarModulesSection({
     },
     personal: {
       topup: {
-        title: t('Wallet'),
+        title: t('Recharge Center'),
         description: t('Top up balance and view billing history.'),
       },
       store: {
-        title: t('Mall'),
+        title: t('Shanhai Treasure Pavilion'),
         description: t('Purchase redemption codes.'),
       },
       support: {
