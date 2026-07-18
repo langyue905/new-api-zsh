@@ -20,6 +20,23 @@ COPY ./web/classic ./classic
 COPY ./VERSION /build/VERSION
 RUN cd classic && VITE_REACT_APP_VERSION=$(cat /build/VERSION) bun run build
 
+FROM node:22-alpine AS builder-gpt-image
+
+WORKDIR /build
+COPY web/playgrounds/gpt-image/package.json web/playgrounds/gpt-image/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY web/playgrounds/gpt-image ./
+RUN npm run build
+
+FROM node:22-alpine AS builder-sora-video
+
+ENV NEXT_TELEMETRY_DISABLED=1
+WORKDIR /build
+COPY web/playgrounds/sora-2/package.json web/playgrounds/sora-2/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY web/playgrounds/sora-2 ./
+RUN NEXT_PUBLIC_BASE_PATH=/playgrounds/video npm run build:frontend
+
 FROM golang:1.26.1-alpine@sha256:2389ebfa5b7f43eeafbd6be0c3700cc46690ef842ad962f6c5bd6be49ed82039 AS builder2
 ENV GO111MODULE=on CGO_ENABLED=0
 
@@ -36,6 +53,10 @@ RUN go mod download
 COPY . .
 COPY --from=builder /build/web/default/dist ./web/default/dist
 COPY --from=builder-classic /build/web/classic/dist ./web/classic/dist
+COPY --from=builder-gpt-image /build/dist ./web/default/dist/playgrounds/image
+COPY --from=builder-sora-video /build/out ./web/default/dist/playgrounds/video
+COPY --from=builder-gpt-image /build/dist ./web/classic/dist/playgrounds/image
+COPY --from=builder-sora-video /build/out ./web/classic/dist/playgrounds/video
 RUN go build -ldflags "-s -w -X 'github.com/QuantumNous/new-api/common.Version=$(cat VERSION)'" -o new-api
 
 FROM debian:bookworm-slim@sha256:f06537653ac770703bc45b4b113475bd402f451e85223f0f2837acbf89ab020a

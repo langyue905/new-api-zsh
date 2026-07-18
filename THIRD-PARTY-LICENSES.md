@@ -3,8 +3,13 @@
 This file summarizes direct third-party dependencies used by distributed builds of this project.
 It is an engineering compliance artifact and should be kept with Docker images, standalone binaries, frontend bundles, and Electron installers.
 
-Scope: direct dependencies from `go.mod`, `web/default/package.json`, `web/classic/package.json`, and `electron/package.json`.
+Scope: direct dependencies from `go.mod`, `web/default/package.json`, `web/classic/package.json`, `web/playgrounds/*/package.json`, and `electron/package.json`.
 Transitive dependencies should be audited before a final external release.
+
+## Embedded Applications
+
+- `web/playgrounds/gpt-image` contains GPT Image Playground by CookSleep, licensed under MIT. The upstream license is preserved at `web/playgrounds/gpt-image/LICENSE`.
+- `web/playgrounds/sora-2` contains Sora 2 Playground by Aljosa Asanovic, licensed under MIT. The upstream license is preserved at `web/playgrounds/sora-2/LICENSE`.
 
 ## Dependency Inventory
 
@@ -372,4 +377,3 @@ this software, either in source code form or as a compiled binary, for any
 purpose, commercial or non-commercial, and by any means.
 
 For more information, please refer to https://unlicense.org/
-
