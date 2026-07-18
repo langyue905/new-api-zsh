@@ -11,7 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-//go:embed testdata/embedded-site
+//go:embed all:testdata/embedded-site
 var embeddedSiteFS embed.FS
 
 func TestEmbedFolderServesNestedDirectoryIndex(t *testing.T) {
@@ -33,4 +33,13 @@ func TestEmbedFolderServesNestedDirectoryIndex(t *testing.T) {
 	if !strings.Contains(recorder.Body.String(), "GPT Image Playground Test") {
 		t.Fatalf("expected embedded playground index, got %q", recorder.Body.String())
 	}
+}
+
+func TestEmbedFolderServesUnderscoreAssets(t *testing.T) {
+	fs := EmbedFolder(embeddedSiteFS, "testdata/embedded-site")
+	file, err := fs.Open("/playgrounds/image/_next/static/test.js")
+	if err != nil {
+		t.Fatalf("expected underscore asset to be embedded: %v", err)
+	}
+	defer file.Close()
 }
