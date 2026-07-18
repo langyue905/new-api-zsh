@@ -23,7 +23,7 @@ export const MALL_LINK_CONFIG = {
 } as const
 
 export const MALL_EMBED_CONFIG = {
-  src: 'https://shop.zshai.cc/',
+  src: 'https://pay.ldxp.cn/shop/baixiaosheng',
   cropPx: {
     bottom: 110,
     left: 241,

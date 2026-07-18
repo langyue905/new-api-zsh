@@ -35,7 +35,7 @@ describe('mall navigation config', () => {
 })
 
 describe('mall embed config', () => {
-  test('uses the shop subdomain and preserves the product-panel crop', () => {
+  test('uses the direct shop URL and preserves the product-panel crop', () => {
     const config = (
       mallContent as typeof mallContent & {
         MALL_EMBED_CONFIG?: {
@@ -49,7 +49,7 @@ describe('mall embed config', () => {
     ).MALL_EMBED_CONFIG
 
     assert.ok(config)
-    assert.equal(config.src, 'https://shop.zshai.cc/')
+    assert.equal(config.src, 'https://pay.ldxp.cn/shop/baixiaosheng')
     assert.deepEqual(config.cropPx, {
       bottom: 110,
       left: 241,
