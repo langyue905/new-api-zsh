@@ -5,9 +5,19 @@ const path = require('path');
 const apiPath = path.join(__dirname, '../src/app/api');
 const disabledPath = path.join(__dirname, '../.api-routes-backup');
 
+function moveDirectory(source, destination) {
+  try {
+    fs.renameSync(source, destination);
+  } catch (error) {
+    if (error.code !== 'EXDEV') throw error;
+    fs.cpSync(source, destination, { recursive: true });
+    fs.rmSync(source, { recursive: true, force: true });
+  }
+}
+
 function disableApiRoutes() {
   if (fs.existsSync(apiPath)) {
-    fs.renameSync(apiPath, disabledPath);
+    moveDirectory(apiPath, disabledPath);
     console.log('✅ API routes disabled for frontend build');
   } else {
     console.log('ℹ️  API routes already disabled');
@@ -16,7 +26,7 @@ function disableApiRoutes() {
 
 function restoreApiRoutes() {
   if (fs.existsSync(disabledPath)) {
-    fs.renameSync(disabledPath, apiPath);
+    moveDirectory(disabledPath, apiPath);
     console.log('✅ API routes restored');
   } else {
     console.log('ℹ️  API routes already restored');
