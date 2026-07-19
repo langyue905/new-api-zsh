@@ -27,7 +27,7 @@ export class VideoService {
             return secondsValue as VideoSeconds;
         }
 
-        throw new Error(`Unsupported clip duration: ${value}`);
+        throw new Error(`不支持的视频时长：${value}`);
     }
 
     private normalizeSize(value: string): VideoSize {
@@ -35,7 +35,7 @@ export class VideoService {
             return value as VideoSize;
         }
 
-        throw new Error(`Unsupported video size: ${value}`);
+        throw new Error(`不支持的视频尺寸：${value}`);
     }
 
     private handleFrontendError(error: unknown): never {
@@ -51,7 +51,7 @@ export class VideoService {
             throw error;
         }
 
-        throw new Error('Unexpected error while communicating with OpenAI.');
+        throw new Error('与 OpenAI 通信时发生未知错误。');
     }
 
     async createVideo(params: {
@@ -66,7 +66,7 @@ export class VideoService {
 
         if (this.config.mode === 'frontend') {
             if (!this.config.clientApiKey) {
-                throw new Error('API key is required for frontend mode');
+                throw new Error('前端模式需要 API 密钥。');
             }
 
             const openai = createFrontendOpenAI(this.config.clientApiKey);
@@ -111,7 +111,7 @@ export class VideoService {
 
             if (!response.ok) {
                 const result = await response.json();
-                throw new Error(result.error || `API request failed with status ${response.status}`);
+                throw new Error(result.error || `接口请求失败，状态码：${response.status}`);
             }
 
             return await response.json();
@@ -121,7 +121,7 @@ export class VideoService {
     async remixVideo(sourceVideoId: string, prompt: string): Promise<VideoJob> {
         if (this.config.mode === 'frontend') {
             if (!this.config.clientApiKey) {
-                throw new Error('API key is required for frontend mode');
+                throw new Error('前端模式需要 API 密钥。');
             }
 
             const openai = createFrontendOpenAI(this.config.clientApiKey);
@@ -146,7 +146,7 @@ export class VideoService {
 
             if (!response.ok) {
                 const result = await response.json();
-                throw new Error(result.error || `API request failed with status ${response.status}`);
+                throw new Error(result.error || `接口请求失败，状态码：${response.status}`);
             }
 
             return await response.json();
@@ -156,7 +156,7 @@ export class VideoService {
     async retrieveVideo(videoId: string): Promise<VideoJob> {
         if (this.config.mode === 'frontend') {
             if (!this.config.clientApiKey) {
-                throw new Error('API key is required for frontend mode');
+                throw new Error('前端模式需要 API 密钥。');
             }
 
             const openai = createFrontendOpenAI(this.config.clientApiKey);
@@ -173,7 +173,7 @@ export class VideoService {
             });
 
             if (!response.ok) {
-                throw new Error(`Failed to fetch job status: ${response.statusText}`);
+                throw new Error(`获取任务状态失败：${response.statusText}`);
             }
 
             return await response.json();
@@ -183,7 +183,7 @@ export class VideoService {
     async deleteVideo(videoId: string): Promise<void> {
         if (this.config.mode === 'frontend') {
             if (!this.config.clientApiKey) {
-                throw new Error('API key is required for frontend mode');
+                throw new Error('前端模式需要 API 密钥。');
             }
 
             const openai = createFrontendOpenAI(this.config.clientApiKey);
@@ -201,7 +201,7 @@ export class VideoService {
 
             if (!response.ok) {
                 const result = await response.json();
-                throw new Error(result.error || 'Failed to delete video');
+                throw new Error(result.error || '视频删除失败');
             }
         }
     }
@@ -212,7 +212,7 @@ export class VideoService {
     ): Promise<Blob> {
         if (this.config.mode === 'frontend') {
             if (!this.config.clientApiKey) {
-                throw new Error('API key is required for frontend mode');
+                throw new Error('前端模式需要 API 密钥。');
             }
 
             const openai = createFrontendOpenAI(this.config.clientApiKey);
@@ -234,7 +234,7 @@ export class VideoService {
             });
 
             if (!response.ok) {
-                throw new Error(`Failed to download ${variant}: ${response.statusText}`);
+                throw new Error(`下载${variant}失败：${response.statusText}`);
             }
 
             return await response.blob();

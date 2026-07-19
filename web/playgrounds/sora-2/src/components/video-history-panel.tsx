@@ -109,41 +109,41 @@ export function VideoHistoryPanel({
         <Card className='flex h-full w-full flex-col overflow-hidden rounded-lg border border-white/10 bg-black'>
             <CardHeader className='flex flex-row items-center justify-between gap-4 border-b border-white/10 px-4 py-3'>
                 <div className='flex items-center gap-2'>
-                    <CardTitle className='text-lg font-medium text-white'>History</CardTitle>
+                    <CardTitle className='text-lg font-medium text-white'>历史记录</CardTitle>
                     {totalCost > 0 && (
                         <Dialog open={isTotalCostDialogOpen} onOpenChange={setIsTotalCostDialogOpen}>
                             <DialogTrigger asChild>
                                 <button
                                     className='mt-0.5 flex items-center gap-1 rounded-full bg-green-600/80 px-1.5 py-0.5 text-[12px] text-white transition-colors hover:bg-green-500/90'
-                                    aria-label='Show total cost summary'>
-                                    Total Cost: ${totalCost.toFixed(2)}
+                                    aria-label='显示总费用摘要'>
+                                    总费用：${totalCost.toFixed(2)}
                                 </button>
                             </DialogTrigger>
                             <DialogContent className='border-neutral-700 bg-neutral-900 text-white sm:max-w-[450px]'>
                                 <DialogHeader>
-                                    <DialogTitle className='text-white'>Total Cost Summary</DialogTitle>
+                                    <DialogTitle className='text-white'>总费用摘要</DialogTitle>
                                     <DialogDescription className='sr-only'>
-                                        A summary of the total estimated cost for all generated videos in the history.
+                                        历史记录中所有已生成视频的预估总费用摘要。
                                     </DialogDescription>
                                 </DialogHeader>
                                 <div className='space-y-1 pt-1 text-xs text-neutral-400'>
-                                    <p>Pricing for Sora 2:</p>
+                                    <p>Sora 2 价格：</p>
                                     <ul className='list-disc pl-4'>
-                                        <li>sora-2 (720p): $0.10/sec</li>
-                                        <li>sora-2-pro (720p): $0.30/sec</li>
-                                        <li>sora-2-pro (1080p): $0.50/sec</li>
+                                        <li>sora-2（720p）：$0.10/秒</li>
+                                        <li>sora-2-pro（720p）：$0.30/秒</li>
+                                        <li>sora-2-pro（1080p）：$0.50/秒</li>
                                     </ul>
                                 </div>
                                 <div className='space-y-2 py-4 text-sm text-neutral-300'>
                                     <div className='flex justify-between'>
-                                        <span>Total Videos Generated:</span> <span>{totalVideos.toLocaleString()}</span>
+                                        <span>生成视频总数：</span> <span>{totalVideos.toLocaleString()}</span>
                                     </div>
                                     <div className='flex justify-between'>
-                                        <span>Average Cost Per Video:</span> <span>${averageCost.toFixed(2)}</span>
+                                        <span>平均每个视频费用：</span> <span>${averageCost.toFixed(2)}</span>
                                     </div>
                                     <hr className='my-2 border-neutral-700' />
                                     <div className='flex justify-between font-medium text-white'>
-                                        <span>Total Estimated Cost:</span>
+                                        <span>预估总费用：</span>
                                         <span>${totalCost.toFixed(2)}</span>
                                     </div>
                                 </div>
@@ -154,7 +154,7 @@ export function VideoHistoryPanel({
                                             variant='secondary'
                                             size='sm'
                                             className='bg-neutral-700 text-neutral-200 hover:bg-neutral-600'>
-                                            Close
+                                            关闭
                                         </Button>
                                     </DialogClose>
                                 </DialogFooter>
@@ -168,14 +168,14 @@ export function VideoHistoryPanel({
                         size='sm'
                         onClick={onClearHistory}
                         className='h-auto rounded-md px-2 py-1 text-white/60 hover:bg-white/10 hover:text-white'>
-                        Clear
+                        清空
                     </Button>
                 )}
             </CardHeader>
             <CardContent className='flex-grow overflow-y-auto p-4'>
                 {history.length === 0 ? (
                     <div className='flex h-full items-center justify-center text-white/40'>
-                        <p>Generated videos will appear here.</p>
+                        <p>生成的视频会显示在这里。</p>
                     </div>
                 ) : (
                     <div className='grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5'>
@@ -198,12 +198,12 @@ export function VideoHistoryPanel({
                                                 <div className='flex h-full w-full flex-col items-center justify-center bg-neutral-900'>
                                                     <Loader2 className='h-8 w-8 animate-spin text-white/40 mb-2' />
                                                     <span className='text-xs text-white/60'>
-                                                        {job?.status === 'queued' ? 'Queued' : `${item.progress || job?.progress || 0}%`}
+                                                         {job?.status === 'queued' ? '排队中' : `${item.progress || job?.progress || 0}%`}
                                                     </span>
                                                 </div>
                                             ) : isFailed ? (
                                                 <div className='flex h-full w-full flex-col items-center justify-center bg-red-950 text-red-400 p-2'>
-                                                    <span className='text-xs font-semibold'>Failed</span>
+                                                    <span className='text-xs font-semibold'>失败</span>
                                                     {item.error && (
                                                         <span className='text-[10px] text-red-300 mt-1 text-center line-clamp-2'>
                                                             {item.error}
@@ -236,7 +236,7 @@ export function VideoHistoryPanel({
                                                 ) : (
                                                     <SparklesIcon size={12} />
                                                 )}
-                                                {item.mode === 'remix' ? 'Remix' : 'Create'}
+                                                {item.mode === 'remix' ? '混剪' : '创建'}
                                             </div>
                                             <div className='pointer-events-none absolute bottom-1 left-1 z-10 flex items-center gap-1'>
                                                 <div className='flex items-center gap-1 rounded-full border border-white/10 bg-neutral-900/80 px-1 py-0.5 text-[11px] text-white/70'>
@@ -245,10 +245,10 @@ export function VideoHistoryPanel({
                                                     ) : (
                                                         <Database size={12} className='text-blue-400' />
                                                     )}
-                                                    <span>{originalStorageMode === 'fs' ? 'file' : 'db'}</span>
+                                                    <span>{originalStorageMode === 'fs' ? '文件' : '数据库'}</span>
                                                 </div>
                                                 <div className='flex items-center gap-1 rounded-full border border-white/10 bg-neutral-900/80 px-1 py-0.5 text-[11px] text-white/70'>
-                                                    <span>{item.seconds}s</span>
+                                                    <span>{item.seconds} 秒</span>
                                                 </div>
                                             </div>
                                         </button>
@@ -263,36 +263,36 @@ export function VideoHistoryPanel({
                                                             setOpenCostDialogId(item.id);
                                                         }}
                                                         className='absolute top-1 right-1 z-20 flex items-center gap-0.5 rounded-full bg-green-600/80 px-1.5 py-0.5 text-[11px] text-white transition-colors hover:bg-green-500/90'
-                                                        aria-label='Show cost breakdown'>
+                                                        aria-label='显示费用明细'>
                                                         <DollarSign size={12} />
                                                         {item.costDetails.totalCost.toFixed(2)}
                                                     </button>
                                                 </DialogTrigger>
                                                 <DialogContent className='border-neutral-700 bg-neutral-900 text-white sm:max-w-[450px]'>
                                                     <DialogHeader>
-                                                        <DialogTitle className='text-white'>Cost Breakdown</DialogTitle>
+                                                        <DialogTitle className='text-white'>费用明细</DialogTitle>
                                                         <DialogDescription className='sr-only'>
-                                                            Estimated cost breakdown for this video generation.
+                                                            此视频生成任务的预估费用明细。
                                                         </DialogDescription>
                                                     </DialogHeader>
                                                     <div className='space-y-2 py-4 text-sm text-neutral-300'>
                                                         <div className='flex justify-between'>
-                                                            <span>Model:</span> <span>{item.costDetails.model}</span>
+                                                            <span>模型：</span> <span>{item.costDetails.model}</span>
                                                         </div>
                                                         <div className='flex justify-between'>
-                                                            <span>Resolution:</span>{' '}
+                                                            <span>分辨率：</span>{' '}
                                                             <span>{item.costDetails.resolution}</span>
                                                         </div>
                                                         <div className='flex justify-between'>
-                                                            <span>Duration:</span> <span>{item.costDetails.duration}s</span>
+                                                            <span>时长：</span> <span>{item.costDetails.duration} 秒</span>
                                                         </div>
                                                         <div className='flex justify-between'>
-                                                            <span>Price Per Second:</span>{' '}
+                                                            <span>每秒价格：</span>{' '}
                                                             <span>${item.costDetails.pricePerSecond.toFixed(2)}</span>
                                                         </div>
                                                         <hr className='my-2 border-neutral-700' />
                                                         <div className='flex justify-between font-medium text-white'>
-                                                            <span>Total Cost:</span>
+                                                            <span>总费用：</span>
                                                             <span>${item.costDetails.totalCost.toFixed(2)}</span>
                                                         </div>
                                                     </div>
@@ -303,7 +303,7 @@ export function VideoHistoryPanel({
                                                                 variant='secondary'
                                                                 size='sm'
                                                                 className='bg-neutral-700 text-neutral-200 hover:bg-neutral-600'>
-                                                                Close
+                                                                关闭
                                                             </Button>
                                                         </DialogClose>
                                                     </DialogFooter>
@@ -315,14 +315,14 @@ export function VideoHistoryPanel({
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     const message = item.status === 'failed'
-                                                        ? 'Are you sure you want to delete this failed request from your history?'
-                                                        : 'Are you sure you want to delete this video? This will delete it from both your local storage AND OpenAI servers permanently.';
+                                                        ? '确定要从历史记录中删除这个失败的请求吗？'
+                                                        : '确定要删除这个视频吗？这会将它从本地存储和 OpenAI 服务器永久删除。';
                                                     if (confirm(message)) {
                                                         onDeleteItem(item);
                                                     }
                                                 }}
                                                 className='absolute bottom-1 right-1 z-20 flex items-center gap-0.5 rounded-full bg-red-600/80 p-1 text-white transition-colors hover:bg-red-500/90'
-                                                aria-label='Delete video'>
+                                                aria-label='删除视频'>
                                                 <Trash2 size={12} />
                                             </button>
                                         )}

@@ -53,7 +53,7 @@ function ClickablePrompt({ prompt }: { prompt: string }) {
                 </div>
             </TooltipTrigger>
             <TooltipContent side="top" className="bg-black border border-white/20 text-white">
-                <p>Click to copy full prompt</p>
+                <p>点击复制完整描述词</p>
             </TooltipContent>
         </Tooltip>
     );
@@ -75,28 +75,28 @@ export function VideoOutput({
                 return (
                     <div className='flex items-center gap-2 rounded-md bg-blue-500/20 px-3 py-1.5 text-sm text-blue-300'>
                         <Clock className='h-4 w-4' />
-                        Queued
+                        排队中
                     </div>
                 );
             case 'in_progress':
                 return (
                     <div className='flex items-center gap-2 rounded-md bg-yellow-500/20 px-3 py-1.5 text-sm text-yellow-300'>
                         <Loader2 className='h-4 w-4 animate-spin' />
-                        Processing {job.progress}%
+                        处理中 {job.progress}%
                     </div>
                 );
             case 'completed':
                 return (
                     <div className='flex items-center gap-2 rounded-md bg-green-500/20 px-3 py-1.5 text-sm text-green-300'>
                         <CheckCircle className='h-4 w-4' />
-                        Completed
+                        已完成
                     </div>
                 );
             case 'failed':
                 return (
                     <div className='flex items-center gap-2 rounded-md bg-red-500/20 px-3 py-1.5 text-sm text-red-300'>
                         <AlertCircle className='h-4 w-4' />
-                        Failed
+                        失败
                     </div>
                 );
         }
@@ -125,9 +125,9 @@ export function VideoOutput({
             <CardHeader className='border-b border-white/10 pb-4'>
                 <div className='flex items-center justify-between'>
                     <div>
-                        <CardTitle className='text-lg font-medium text-white'>Video Output</CardTitle>
+                        <CardTitle className='text-lg font-medium text-white'>视频输出</CardTitle>
                         <CardDescription className='mt-1 text-white/60'>
-                            Your generated video will appear here
+                            生成的视频会显示在这里
                         </CardDescription>
                     </div>
                     {job && getStatusBadge()}
@@ -141,9 +141,9 @@ export function VideoOutput({
                 {!job && !isLoading && (
                     <div className='flex flex-col items-center justify-center text-center'>
                         <Sparkles className='mb-4 h-12 w-12 text-white/20' />
-                        <p className='text-white/40'>No video job started yet</p>
+                        <p className='text-white/40'>尚未开始视频任务</p>
                         <p className='mt-2 text-sm text-white/30'>
-                            Submit a prompt to create your first video
+                            提交描述词以创建你的第一个视频
                         </p>
                     </div>
                 )}
@@ -151,7 +151,7 @@ export function VideoOutput({
                 {isLoading && !job && (
                     <div className='flex flex-col items-center justify-center text-center'>
                         <Loader2 className='mb-4 h-12 w-12 animate-spin text-white/60' />
-                        <p className='text-white/60'>Initializing video generation...</p>
+                        <p className='text-white/60'>正在初始化视频生成……</p>
                     </div>
                 )}
 
@@ -161,22 +161,22 @@ export function VideoOutput({
                             <Loader2 className='mb-4 h-12 w-12 animate-spin text-white/60' />
                             <p className='text-lg text-white/80'>
                                 {job.id.startsWith('temp_')
-                                    ? 'Sending request to OpenAI...'
+                                    ? '正在向 OpenAI 发送请求……'
                                     : job.status === 'queued'
-                                        ? 'Your video is queued...'
-                                        : 'Generating your video...'}
+                                        ? '视频正在排队……'
+                                        : '正在生成视频……'}
                             </p>
                             <p className='mt-2 text-sm text-white/40'>
                                 {job.id.startsWith('temp_')
-                                    ? 'Initializing video generation job'
-                                    : 'This may take several minutes depending on video length and API load'}
+                                    ? '正在初始化视频生成任务'
+                                    : '根据视频时长和接口负载，可能需要几分钟'}
                             </p>
                         </div>
 
                         {job.status === 'in_progress' && !job.id.startsWith('temp_') && (
                             <div className='w-full space-y-2'>
                                 <div className='flex justify-between text-sm text-white/60'>
-                                    <span>Progress</span>
+                                    <span>进度</span>
                                     <span>{job.progress}%</span>
                                 </div>
                                 <div className='h-2 w-full overflow-hidden rounded-full bg-white/10'>
@@ -195,13 +195,13 @@ export function VideoOutput({
                         {!job.id.startsWith('temp_') && (
                             <div className='mt-4 rounded-md bg-white/5 p-4'>
                                 <p className='text-xs text-white/40'>
-                                    <span className='font-medium text-white/60'>Model:</span> {job.model}
+                                    <span className='font-medium text-white/60'>模型：</span> {job.model}
                                 </p>
                                 <p className='text-xs text-white/40'>
-                                    <span className='font-medium text-white/60'>Resolution:</span> {job.size}
+                                    <span className='font-medium text-white/60'>分辨率：</span> {job.size}
                                 </p>
                                 <p className='text-xs text-white/40'>
-                                    <span className='font-medium text-white/60'>Duration:</span> {job.seconds}s
+                                    <span className='font-medium text-white/60'>时长：</span> {job.seconds} 秒
                                 </p>
                             </div>
                         )}
@@ -224,7 +224,7 @@ export function VideoOutput({
                                     variant='outline'
                                     className='border-white/20 bg-black text-white hover:bg-white/10 hover:text-white'>
                                     <Download className='mr-2 h-4 w-4' />
-                                    Download
+                                    下载视频
                                 </Button>
                             )}
                             {onSendToRemix && (
@@ -233,7 +233,7 @@ export function VideoOutput({
                                     variant='outline'
                                     className='border-white/20 bg-black text-white hover:bg-white/10 hover:text-white'>
                                     <Sparkles className='mr-2 h-4 w-4' />
-                                    Send to Remix
+                                    发送到混剪
                                 </Button>
                             )}
                         </div>
@@ -244,13 +244,13 @@ export function VideoOutput({
 
                         <div className='shrink-0 rounded-md bg-white/5 p-4'>
                             <p className='text-xs text-white/40'>
-                                <span className='font-medium text-white/60'>Model:</span> {completedOutput.job.model}
+                                <span className='font-medium text-white/60'>模型：</span> {completedOutput.job.model}
                             </p>
                             <p className='text-xs text-white/40'>
-                                <span className='font-medium text-white/60'>Resolution:</span> {completedOutput.job.size}
+                                <span className='font-medium text-white/60'>分辨率：</span> {completedOutput.job.size}
                             </p>
                             <p className='text-xs text-white/40'>
-                                <span className='font-medium text-white/60'>Duration:</span> {completedOutput.job.seconds}s
+                                <span className='font-medium text-white/60'>时长：</span> {completedOutput.job.seconds} 秒
                             </p>
                         </div>
                     </div>
@@ -260,10 +260,10 @@ export function VideoOutput({
                     <div className='w-full space-y-4'>
                         <div className='flex flex-col items-center justify-center text-center'>
                             <AlertCircle className='mb-4 h-12 w-12 text-red-400' />
-                            <p className='text-lg text-red-300'>Video generation failed</p>
+                            <p className='text-lg text-red-300'>视频生成失败</p>
                             {job.error && (
                                 <div className='mt-4 max-w-md rounded-md border border-red-500/30 bg-red-500/10 p-4'>
-                                    <p className='text-sm font-medium text-red-200'>Error:</p>
+                                    <p className='text-sm font-medium text-red-200'>错误：</p>
                                     <p className='mt-1 text-sm text-red-300'>{job.error.message}</p>
                                 </div>
                             )}
@@ -271,12 +271,12 @@ export function VideoOutput({
 
                         <div className='rounded-md border border-red-500/20 bg-red-500/10 p-4'>
                             <p className='text-sm text-red-300'>
-                                The video generation encountered an error. This could be due to:
+                                视频生成时遇到错误，可能原因包括：
                             </p>
                             <ul className='mt-2 list-inside list-disc space-y-1 text-xs text-red-300/80'>
-                                <li>Content policy violations</li>
-                                <li>Invalid input parameters</li>
-                                <li>API service issues</li>
+                                <li>内容策略限制</li>
+                                <li>输入参数无效</li>
+                                <li>接口服务异常</li>
                             </ul>
                         </div>
 
@@ -286,13 +286,13 @@ export function VideoOutput({
 
                         <div className='rounded-md bg-white/5 p-4'>
                             <p className='text-xs text-white/40'>
-                                <span className='font-medium text-white/60'>Model:</span> {job.model}
+                                <span className='font-medium text-white/60'>模型：</span> {job.model}
                             </p>
                             <p className='text-xs text-white/40'>
-                                <span className='font-medium text-white/60'>Resolution:</span> {job.size}
+                                <span className='font-medium text-white/60'>分辨率：</span> {job.size}
                             </p>
                             <p className='text-xs text-white/40'>
-                                <span className='font-medium text-white/60'>Duration:</span> {job.seconds}s
+                                <span className='font-medium text-white/60'>时长：</span> {job.seconds} 秒
                             </p>
                         </div>
                     </div>
@@ -428,7 +428,7 @@ function CompletedVideoPlayer({ jobId, videoSrc, thumbnailSrc }: CompletedVideoP
                     className={`absolute inset-0 flex items-center justify-center transition-opacity duration-200 focus:outline-none ${
                         showOverlay ? 'opacity-100' : 'opacity-0 pointer-events-none'
                     }`}
-                    aria-label={isPlaying ? 'Pause video' : 'Play video'}
+                    aria-label={isPlaying ? '暂停视频' : '播放视频'}
                 >
                     <span className='rounded-full bg-black/70 p-4 text-white shadow-lg backdrop-blur-sm'>
                         {isPlaying ? <Pause className='h-8 w-8' /> : <Play className='h-8 w-8' />}
@@ -447,7 +447,7 @@ function CompletedVideoPlayer({ jobId, videoSrc, thumbnailSrc }: CompletedVideoP
                     onValueCommit={handleSliderCommit}
                     disabled={duration === 0}
                     className='flex-1'
-                    aria-label='Video progress'
+                    aria-label='视频进度'
                 />
                 <span className='w-12 text-right text-xs font-medium text-white/60 tabular-nums'>
                     {formattedDuration}

@@ -28,7 +28,7 @@ const toVideoSeconds = (value: number | string): VideoSeconds => {
     if ((VIDEO_SECONDS_VALUES as readonly string[]).includes(normalized)) {
         return normalized as VideoSeconds;
     }
-    throw new Error(`Unsupported video seconds value: ${value}`);
+    throw new Error(`不支持的视频时长值：${value}`);
 };
 
 const explicitModeClient = process.env.NEXT_PUBLIC_FILE_STORAGE_MODE;
@@ -182,7 +182,7 @@ export default function HomePage() {
                 });
 
                 if (!response.ok) {
-                    throw new Error('Failed to fetch auth status');
+                    throw new Error('获取认证状态失败');
                 }
 
                 const data = await response.json();
@@ -284,7 +284,7 @@ export default function HomePage() {
 
     const handleSavePassword = async (password: string) => {
         if (!password.trim()) {
-            setError('Password cannot be empty.');
+            setError('访问密码不能为空。');
             return;
         }
         try {
@@ -295,7 +295,7 @@ export default function HomePage() {
             setIsPasswordDialogOpen(false);
         } catch (e) {
             console.error('Error hashing password:', e);
-            setError('Failed to save password due to a hashing error.');
+            setError('密码加密失败，无法保存。');
         }
     };
 
@@ -303,28 +303,28 @@ export default function HomePage() {
         const trimmedKey = apiKey.trim();
 
         if (!trimmedKey) {
-            throw new Error('API key cannot be empty.');
+            throw new Error('API 密钥不能为空。');
         }
 
         if (!trimmedKey.startsWith('sk-')) {
-            throw new Error('API key format looks incorrect. It should start with “sk-”.');
+            throw new Error('API 密钥格式不正确，应以 “sk-” 开头。');
         }
 
         try {
             await verifyFrontendApiKey(trimmedKey);
         } catch (error) {
             if (error instanceof InvalidApiKeyError) {
-                throw new Error('OpenAI rejected this API key. Please double-check and try again.');
+                throw new Error('OpenAI 拒绝了这个 API 密钥，请检查后重试。');
             }
             console.error('Error verifying API key:', error);
-            throw new Error('Failed to verify API key. Please try again.');
+            throw new Error('API 密钥验证失败，请重试。');
         }
 
         try {
             localStorage.setItem('openaiApiKey', trimmedKey);
         } catch (storageError) {
             console.error('Error saving API key:', storageError);
-            throw new Error('Failed to persist API key. Please ensure storage is available.');
+            throw new Error('API 密钥保存失败，请确认浏览器存储可用。');
         }
 
         setClientApiKey(trimmedKey);
@@ -336,7 +336,7 @@ export default function HomePage() {
     };
 
     const handleInvalidApiKey = React.useCallback(
-        (message = 'Your OpenAI API key was rejected. Please enter a new key.') => {
+        (message = '你的 OpenAI API 密钥已被拒绝，请输入新的密钥。') => {
             if (typeof window !== 'undefined') {
                 localStorage.removeItem('openaiApiKey');
             }
@@ -526,7 +526,7 @@ export default function HomePage() {
                                         return;
                                     }
                                     console.error(`Error downloading completed video ${jobId}:`, err);
-                                    setError(err instanceof Error ? err.message : 'Failed to download video');
+                                    setError(err instanceof Error ? err.message : '视频下载失败');
                                 });
                             } else if (jobUpdate.status === 'failed') {
                                 // Update history with error and remove cost
@@ -550,7 +550,7 @@ export default function HomePage() {
                                     saveActiveJobIds(newJobs);
                                     return newJobs;
                                 });
-                                setError(jobUpdate.error?.message || 'Video generation failed');
+                                setError(jobUpdate.error?.message || '视频生成失败');
                             }
                     } catch (err) {
                         if (err instanceof InvalidApiKeyError) {
@@ -709,7 +709,7 @@ export default function HomePage() {
                 return;
             }
             console.error(`Error downloading video ${job.id}:`, err);
-            setError(err instanceof Error ? err.message : 'Failed to download video');
+            setError(err instanceof Error ? err.message : '视频下载失败');
         }
     };
 
@@ -719,7 +719,7 @@ export default function HomePage() {
 
         // Backend mode: check password
         if (apiMode === 'backend' && isPasswordRequiredByBackend && !clientPasswordHash) {
-            setError('Password is required. Please configure the password by clicking the lock icon.');
+            setError('需要访问密码，请点击锁形图标进行配置。');
             setPasswordDialogContext('initial');
             setIsPasswordDialogOpen(true);
             setIsSubmitting(false);
@@ -728,7 +728,7 @@ export default function HomePage() {
 
         // Frontend mode: check API key (shouldn't reach here with gate, but defensive)
         if (apiMode === 'frontend' && !clientApiKey) {
-            setError('OpenAI API key is required for frontend mode.');
+            setError('前端模式需要 OpenAI API 密钥。');
             setIsSubmitting(false);
             return;
         }
@@ -820,9 +820,9 @@ export default function HomePage() {
         } catch (err: unknown) {
             console.error('Error creating video:', err);
             if (err instanceof InvalidApiKeyError) {
-                handleInvalidApiKey('The provided OpenAI API key was rejected. Please enter a valid key.');
+                handleInvalidApiKey('提供的 OpenAI API 密钥已被拒绝，请输入有效密钥。');
             } else {
-                const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred.';
+                const errorMessage = err instanceof Error ? err.message : '发生未知错误。';
                 setError(errorMessage);
             }
 
@@ -843,7 +843,7 @@ export default function HomePage() {
 
         // Backend mode: check password
         if (apiMode === 'backend' && isPasswordRequiredByBackend && !clientPasswordHash) {
-            setError('Password is required. Please configure the password by clicking the lock icon.');
+            setError('需要访问密码，请点击锁形图标进行配置。');
             setPasswordDialogContext('initial');
             setIsPasswordDialogOpen(true);
             setIsSubmitting(false);
@@ -852,7 +852,7 @@ export default function HomePage() {
 
         // Frontend mode: check API key (shouldn't reach here with gate, but defensive)
         if (apiMode === 'frontend' && !clientApiKey) {
-            setError('OpenAI API key is required for frontend mode.');
+            setError('前端模式需要 OpenAI API 密钥。');
             setIsSubmitting(false);
             return;
         }
@@ -942,9 +942,9 @@ export default function HomePage() {
         } catch (err: unknown) {
             console.error('Error creating remix:', err);
             if (err instanceof InvalidApiKeyError) {
-                handleInvalidApiKey('The provided OpenAI API key was rejected. Please enter a valid key.');
+                handleInvalidApiKey('提供的 OpenAI API 密钥已被拒绝，请输入有效密钥。');
             } else {
-                const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred.';
+                const errorMessage = err instanceof Error ? err.message : '发生未知错误。';
                 setError(errorMessage);
             }
 
@@ -989,8 +989,8 @@ export default function HomePage() {
     const handleClearHistory = async () => {
         const confirmationMessage =
             effectiveStorageModeClient === 'indexeddb'
-                ? 'Are you sure you want to clear the entire video history? This will delete all stored videos from your browser (IndexedDB) but will NOT delete them from OpenAI servers. This cannot be undone.'
-                : 'Are you sure you want to clear the entire video history? This only clears your local history and does NOT delete videos from OpenAI servers. This cannot be undone.';
+                ? '确定要清空全部视频历史吗？这会删除浏览器（IndexedDB）中保存的视频，但不会删除 OpenAI 服务器上的视频。此操作无法撤销。'
+                : '确定要清空全部视频历史吗？这只会清除本地历史记录，不会删除 OpenAI 服务器上的视频。此操作无法撤销。';
 
         if (window.confirm(confirmationMessage)) {
             setHistory([]);
@@ -1009,7 +1009,7 @@ export default function HomePage() {
                 }
             } catch (e) {
                 console.error('Failed during history clearing:', e);
-                setError(`Failed to clear history: ${e instanceof Error ? e.message : String(e)}`);
+                setError(`清空历史记录失败：${e instanceof Error ? e.message : String(e)}`);
             }
         }
     };
@@ -1071,7 +1071,7 @@ export default function HomePage() {
                 return;
             }
             console.error('Error deleting video:', err);
-            setError(err instanceof Error ? err.message : 'Failed to delete video');
+            setError(err instanceof Error ? err.message : '视频删除失败');
         }
     };
 
@@ -1099,7 +1099,7 @@ export default function HomePage() {
         try {
             const url = getVideoSrc(videoId);
             if (!url) {
-                throw new Error('Video source not found');
+                throw new Error('找不到视频文件');
             }
 
             // Create a download link
@@ -1111,7 +1111,7 @@ export default function HomePage() {
             document.body.removeChild(a);
         } catch (err) {
             console.error('Error downloading video:', err);
-            setError(err instanceof Error ? err.message : 'Failed to download video');
+            setError(err instanceof Error ? err.message : '视频下载失败');
         }
     };
 
@@ -1144,11 +1144,11 @@ export default function HomePage() {
                     onOpenChange={setIsPasswordDialogOpen}
                     onSave={handleSavePassword}
                     isRequired={isPasswordRequiredByBackend === true && !clientPasswordHash}
-                    title={passwordDialogContext === 'retry' ? 'Invalid Password' : 'Password Required'}
+                    title={passwordDialogContext === 'retry' ? '访问密码错误' : '需要访问密码'}
                     description={
                         passwordDialogContext === 'retry'
-                            ? 'The password was incorrect. Please try again.'
-                            : 'This application is password-protected. Please enter the password to continue.'
+                            ? '密码不正确，请重试。'
+                            : '此应用受密码保护，请输入密码后继续。'
                     }
                 />
             )}
@@ -1164,16 +1164,16 @@ export default function HomePage() {
                     <DialogHeader>
                         <DialogTitle className='flex items-center gap-2 text-white'>
                             <AlertCircle className='h-5 w-5 text-yellow-500' />
-                            Video Still Processing
+                            视频仍在处理中
                         </DialogTitle>
                         <DialogDescription className='text-neutral-400'>
-                            This video is still processing on OpenAI servers and cannot be deleted remotely yet.
+                            此视频仍在 OpenAI 服务器上处理，暂时无法远程删除。
                         </DialogDescription>
                     </DialogHeader>
                     <div className='py-4 text-sm text-neutral-300'>
-                        <p>Would you like to force delete it from your local history?</p>
+                        <p>是否要强制从本地历史记录中删除？</p>
                         <p className='mt-3 text-xs text-neutral-400'>
-                            ⚠️ This will remove it from your view, but it may still exist on OpenAI servers.
+                            ⚠️ 这会从你的视图中移除视频，但它可能仍存在于 OpenAI 服务器上。
                         </p>
                     </div>
                     <DialogFooter className='gap-2'>
@@ -1182,13 +1182,13 @@ export default function HomePage() {
                             variant='secondary'
                             onClick={handleForceDeleteCancel}
                             className='bg-neutral-700 text-neutral-200 hover:bg-neutral-600'>
-                            Wait
+                            等待
                         </Button>
                         <Button
                             type='button'
                             onClick={handleForceDeleteConfirm}
                             className='bg-red-600 text-white hover:bg-red-700'>
-                            Force Delete
+                            强制删除
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -1237,7 +1237,7 @@ export default function HomePage() {
                     <div className='flex min-h-[600px] flex-col lg:col-span-1'>
                         {error && (
                             <Alert variant='destructive' className='mb-4 border-red-500/50 bg-red-900/20 text-red-300'>
-                                <AlertTitle className='text-red-200'>Error</AlertTitle>
+                            <AlertTitle className='text-red-200'>错误</AlertTitle>
                                 <AlertDescription>{error}</AlertDescription>
                             </Alert>
                         )}

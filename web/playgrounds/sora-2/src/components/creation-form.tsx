@@ -72,8 +72,8 @@ export function CreationForm({
         if (file) {
             const maxSizeBytes = 100 * 1024 * 1024; // 100 MB
             if (file.size > maxSizeBytes) {
-                alert(`File size exceeds 100 MB limit. Selected file is ${(file.size / (1024 * 1024)).toFixed(2)} MB.`);
-                event.target.value = ''; // Clear the input
+                alert(`文件大小超过 100 MB 限制，当前文件为 ${(file.size / (1024 * 1024)).toFixed(2)} MB。`);
+                event.target.value = ''; // 清空文件选择
                 return;
             }
             setInputReference(file);
@@ -85,10 +85,10 @@ export function CreationForm({
             <CardHeader className='flex items-start justify-between border-b border-white/10 pb-4'>
                 <div>
                     <div className='flex items-center'>
-                        <CardTitle className='py-1 text-lg font-medium text-white'>Create Video</CardTitle>
+                        <CardTitle className='py-1 text-lg font-medium text-white'>创建视频</CardTitle>
                     </div>
                     <CardDescription className='mt-1 text-white/60'>
-                        Generate a new video from a text prompt using Sora 2.
+                        使用 Sora 2 根据文字描述生成新视频。
                     </CardDescription>
                 </div>
                 <ModeToggle currentMode={currentMode} onModeChange={onModeChange} />
@@ -97,11 +97,11 @@ export function CreationForm({
                 <CardContent className='flex-1 space-y-5 overflow-y-auto p-4 lg:overflow-visible'>
                     <div className='space-y-1.5'>
                         <Label htmlFor='prompt' className='text-white'>
-                            Prompt
+                            描述词
                         </Label>
                         <Textarea
                             id='prompt'
-                            placeholder='e.g., Wide shot of a child flying a red kite in a grassy park, golden hour sunlight, camera slowly pans upward.'
+                            placeholder='例如：广角镜头下，孩子在绿草公园放飞红色风筝，金色时刻的阳光，镜头缓慢向上摇。'
                             value={prompt}
                             onChange={(e) => setPrompt(e.target.value)}
                             required
@@ -109,20 +109,20 @@ export function CreationForm({
                             className='min-h-[100px] resize-none rounded-md border border-white/20 bg-black text-white placeholder:text-white/40 focus:border-white/50 focus:ring-white/50'
                         />
                         <p className='text-xs text-white/40'>
-                            Describe: shot type, subject, action, setting, and lighting for best results.
+                            为获得更好的效果，请描述镜头类型、主体、动作、场景和光线。
                         </p>
                     </div>
 
                     <div className='space-y-2'>
                         <Label htmlFor='model-select' className='text-white'>
-                            Model
+                            模型
                         </Label>
                         <Select
                             value={model}
                             onValueChange={(value) => {
                                 const newModel = value as VideoModel;
                                 setModel(newModel);
-                                // If switching to sora-2 and currently have 1080p selected, switch to portrait 720p
+                                // 切换到 sora-2 时，如果当前选择了 1080p，则改为竖屏 720p
                                 if (newModel === 'sora-2' && (size === '1024x1792' || size === '1792x1024')) {
                                     setSize('720x1280');
                                 }
@@ -146,7 +146,7 @@ export function CreationForm({
 
                     <div className='space-y-2'>
                         <Label htmlFor='size-select' className='text-white'>
-                            Size (Resolution)
+                            尺寸（分辨率）
                         </Label>
                         <Select value={size} onValueChange={(value) => setSize(value as VideoSize)} disabled={isLoading}>
                             <SelectTrigger
@@ -156,27 +156,27 @@ export function CreationForm({
                             </SelectTrigger>
                             <SelectContent className='border-white/20 bg-black text-white'>
                                 <SelectItem value='720x1280' className='focus:bg-white/10 focus:text-white'>
-                                    720x1280 (Portrait - 720p)
+                                    720x1280（竖屏 - 720p）
                                 </SelectItem>
                                 <SelectItem value='1280x720' className='focus:bg-white/10 focus:text-white'>
-                                    1280x720 (Landscape - 720p)
+                                    1280x720（横屏 - 720p）
                                 </SelectItem>
                                 <SelectSeparator className='bg-white/20' />
                                 <SelectGroup>
                                     <SelectLabel className='px-2 py-1.5 text-xs font-medium text-white/60'>
-                                        Sora 2 Pro Only
+                                        仅限 Sora 2 Pro
                                     </SelectLabel>
                                     <SelectItem
                                         value='1024x1792'
                                         className='focus:bg-white/10 focus:text-white disabled:opacity-50 disabled:cursor-not-allowed'
                                         disabled={model === 'sora-2'}>
-                                        1024x1792 (Portrait - 1080p)
+                                        1024x1792（竖屏 - 1080p）
                                     </SelectItem>
                                     <SelectItem
                                         value='1792x1024'
                                         className='focus:bg-white/10 focus:text-white disabled:opacity-50 disabled:cursor-not-allowed'
                                         disabled={model === 'sora-2'}>
-                                        1792x1024 (Landscape - 1080p)
+                                        1792x1024（横屏 - 1080p）
                                     </SelectItem>
                                 </SelectGroup>
                             </SelectContent>
@@ -184,7 +184,7 @@ export function CreationForm({
                     </div>
 
                     <div className='space-y-2'>
-                        <Label className='text-white'>Duration</Label>
+                        <Label className='text-white'>时长</Label>
                         <RadioGroup
                             value={seconds}
                             onValueChange={(value) => setSeconds(value as VideoSeconds)}
@@ -197,7 +197,7 @@ export function CreationForm({
                                     className='border-white/40 text-white data-[state=checked]:border-white data-[state=checked]:text-white'
                                 />
                                 <Label htmlFor='duration-4' className='cursor-pointer text-base text-white/80'>
-                                    4 seconds
+                                    4 秒
                                 </Label>
                             </div>
                             <div className='flex items-center space-x-2'>
@@ -207,7 +207,7 @@ export function CreationForm({
                                     className='border-white/40 text-white data-[state=checked]:border-white data-[state=checked]:text-white'
                                 />
                                 <Label htmlFor='duration-8' className='cursor-pointer text-base text-white/80'>
-                                    8 seconds
+                                    8 秒
                                 </Label>
                             </div>
                             <div className='flex items-center space-x-2'>
@@ -217,7 +217,7 @@ export function CreationForm({
                                     className='border-white/40 text-white data-[state=checked]:border-white data-[state=checked]:text-white'
                                 />
                                 <Label htmlFor='duration-12' className='cursor-pointer text-base text-white/80'>
-                                    12 seconds
+                                    12 秒
                                 </Label>
                             </div>
                         </RadioGroup>
@@ -225,7 +225,7 @@ export function CreationForm({
 
                     <div className='space-y-2'>
                         <Label htmlFor='input-reference' className='text-white'>
-                            Input Reference (Optional)
+                            参考素材（可选）
                         </Label>
                         <Input
                             id='input-reference'
@@ -236,13 +236,13 @@ export function CreationForm({
                             className='flex h-10 cursor-pointer items-center rounded-md border border-white/20 bg-black px-3 text-white leading-tight file:mr-4 file:inline-flex file:h-full file:cursor-pointer file:items-center file:justify-center file:rounded-md file:border-0 file:bg-white/10 file:px-4 file:text-sm file:font-medium file:text-white hover:file:bg-white/20 focus:border-white/50 focus:ring-white/50'
                         />
                         {inputReference && (
-                            <p className='text-xs text-white/60'>Selected: {inputReference.name}</p>
+                            <p className='text-xs text-white/60'>已选择：{inputReference.name}</p>
                         )}
                         <p className='text-xs text-white/40'>
-                            Upload an image or video to use as the first frame. Must match the selected resolution.
+                            上传图片或视频作为首帧，尺寸必须与所选分辨率一致。
                         </p>
                         <p className='text-xs text-white/40'>
-                            Maximum file size is 100 MB. Video input is not available for all organizations.
+                            文件大小上限为 100 MB。视频输入暂不对所有组织开放。
                         </p>
                     </div>
                 </CardContent>
@@ -254,12 +254,12 @@ export function CreationForm({
                         {isLoading ? (
                             <>
                                 <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                                Creating Video...
+                                正在创建视频……
                             </>
                         ) : (
                             <>
                                 <Sparkles className='mr-2 h-4 w-4' />
-                                Create Video
+                                创建视频
                             </>
                         )}
                     </Button>

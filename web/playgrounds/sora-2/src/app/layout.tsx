@@ -1,21 +1,10 @@
 import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
-
-const geistSans = Geist({
-    variable: '--font-geist-sans',
-    subsets: ['latin']
-});
-
-const geistMono = Geist_Mono({
-    variable: '--font-geist-mono',
-    subsets: ['latin']
-});
 
 export const metadata: Metadata = {
-    title: 'Sora 2 Playground',
-    description: "Generate and edit videos using OpenAI's Sora 2 model.",
+    title: 'Sora 2 视频生成',
+    description: '使用 OpenAI Sora 2 模型生成和编辑视频。'
 };
 
 export default function RootLayout({
@@ -24,8 +13,8 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang='en' suppressHydrationWarning>
-            <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <html lang='zh-CN' suppressHydrationWarning>
+            <body className='antialiased'>
                 <ThemeProvider attribute='class' defaultTheme='dark' enableSystem={false} disableTransitionOnChange>
                     {children}
                 </ThemeProvider>

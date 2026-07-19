@@ -25,7 +25,7 @@ export function PasswordDialog({
     isOpen,
     onOpenChange,
     onSave,
-    title = 'Configure Password',
+    title = '配置访问密码',
     description,
     isRequired = false
 }: PasswordDialogProps) {
@@ -63,7 +63,7 @@ export function PasswordDialog({
                             ref={inputRef}
                             id='password-input'
                             type='password'
-                            placeholder='Enter your password'
+                            placeholder='请输入访问密码'
                             value={currentPassword}
                             onChange={(e) => setCurrentPassword(e.target.value)}
                             className='col-span-1 border-white/20 bg-black text-white placeholder:text-white/40 focus:border-white/50 focus:ring-white/50'
@@ -82,7 +82,7 @@ export function PasswordDialog({
                         onClick={handleSave}
                         disabled={!currentPassword.trim()}
                         className='bg-white px-6 text-black hover:bg-white/90 disabled:bg-white/10 disabled:text-white/40'>
-                        Save
+                        保存
                     </Button>
                 </DialogFooter>
             </DialogContent>

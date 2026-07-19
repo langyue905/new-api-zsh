@@ -21,7 +21,7 @@ export function ModeToggle({ currentMode, onModeChange }: ModeToggleProps) {
                             ? 'border-white bg-white text-black'
                             : 'border-dashed border-white/30 bg-transparent text-white/60 hover:border-white/50 hover:text-white/80'
                     } `}>
-                    Create Video
+                    创建视频
                 </TabsTrigger>
                 <TabsTrigger
                     value='remix'
@@ -30,7 +30,7 @@ export function ModeToggle({ currentMode, onModeChange }: ModeToggleProps) {
                             ? 'border-white bg-white text-black'
                             : 'border-dashed border-white/30 bg-transparent text-white/60 hover:border-white/50 hover:text-white/80'
                     } `}>
-                    Remix Video
+                    混剪视频
                 </TabsTrigger>
             </TabsList>
         </Tabs>

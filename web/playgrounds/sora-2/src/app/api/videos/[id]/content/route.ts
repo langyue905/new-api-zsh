@@ -25,11 +25,11 @@ async function ensureOutputDirExists() {
                 console.log(`Created output directory: ${outputDir}`);
             } catch (mkdirError) {
                 console.error(`Error creating output directory ${outputDir}:`, mkdirError);
-                throw new Error('Failed to create video output directory.');
+                throw new Error('创建视频输出目录失败。');
             }
         } else {
             console.error(`Error accessing output directory ${outputDir}:`, error);
-            throw new Error('Failed to access video output directory.');
+            throw new Error('无法访问视频输出目录。');
         }
     }
 }

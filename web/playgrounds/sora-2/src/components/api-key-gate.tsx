@@ -53,8 +53,8 @@ export function ApiKeyGate({ isBlocked, onConfigure, children, className }: ApiK
                     <div className='flex flex-col items-center gap-4 rounded-lg border border-white/20 bg-black/80 p-8 text-center shadow-2xl'>
                         <Lock className='h-12 w-12 text-white/80' />
                         <div>
-                            <h3 className='text-lg font-semibold text-white'>Configure OpenAI API Key</h3>
-                            <p className='mt-2 text-sm text-white/60'>Click here to get started</p>
+                            <h3 className='text-lg font-semibold text-white'>配置 OpenAI API 密钥</h3>
+                            <p className='mt-2 text-sm text-white/60'>点击这里开始使用</p>
                         </div>
                     </div>
                 </div>

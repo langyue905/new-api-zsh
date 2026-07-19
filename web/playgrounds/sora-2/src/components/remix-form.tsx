@@ -49,7 +49,7 @@ export function RemixForm({
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         if (!sourceVideoId) {
-            alert('Please select a source video to remix.');
+            alert('请选择要混剪的源视频。');
             return;
         }
         const formData: RemixFormData = {
@@ -67,10 +67,10 @@ export function RemixForm({
             <CardHeader className='flex items-start justify-between border-b border-white/10 pb-4'>
                 <div>
                     <div className='flex items-center'>
-                        <CardTitle className='py-1 text-lg font-medium text-white'>Remix Video</CardTitle>
+                        <CardTitle className='py-1 text-lg font-medium text-white'>混剪视频</CardTitle>
                     </div>
                     <CardDescription className='mt-1 text-white/60'>
-                        Make targeted changes to an existing video.
+                        对已有视频进行定向修改。
                     </CardDescription>
                 </div>
                 <ModeToggle currentMode={currentMode} onModeChange={onModeChange} />
@@ -79,18 +79,18 @@ export function RemixForm({
                 <CardContent className='flex-1 space-y-5 overflow-y-auto p-4 lg:overflow-visible'>
                     <div className='space-y-2'>
                         <Label htmlFor='source-video-select' className='text-white'>
-                            Source Video
+                            源视频
                         </Label>
                         <Select value={sourceVideoId} onValueChange={setSourceVideoId} disabled={isLoading}>
                             <SelectTrigger
                                 id='source-video-select'
                                 className='rounded-md border border-white/20 bg-black text-white focus:border-white/50 focus:ring-white/50'>
-                                <SelectValue placeholder='Select a completed video...' />
+                                <SelectValue placeholder='选择已完成的视频……' />
                             </SelectTrigger>
                             <SelectContent className='border-white/20 bg-black text-white'>
                                 {completedVideos.length === 0 ? (
                                     <SelectItem value='none' disabled className='text-white/40'>
-                                        No completed videos available
+                                        暂无已完成的视频
                                     </SelectItem>
                                 ) : (
                                     completedVideos.map((video) => (
@@ -105,7 +105,7 @@ export function RemixForm({
                                                         : video.prompt}
                                                 </span>
                                                 <span className='text-xs text-white/40'>
-                                                    {video.model} • {video.size} • {video.seconds}s
+                                                    {video.model} • {video.size} • {video.seconds} 秒
                                                 </span>
                                             </div>
                                         </SelectItem>
@@ -114,13 +114,13 @@ export function RemixForm({
                             </SelectContent>
                         </Select>
                         <p className='text-xs text-white/40'>
-                            Choose a video from your history to use as the base for the remix.
+                            从历史记录中选择一个视频作为混剪基础。
                         </p>
                     </div>
 
                     {selectedVideo && videoSrc && (
                         <div className='space-y-2'>
-                            <Label className='text-white'>Source Video Preview</Label>
+                            <Label className='text-white'>源视频预览</Label>
                             <div className='overflow-hidden rounded-lg border border-white/20'>
                                 <video
                                     src={videoSrc}
@@ -131,11 +131,11 @@ export function RemixForm({
                             </div>
                             <div className='rounded-md bg-white/5 p-3'>
                                 <p className='text-xs text-white/60'>
-                                    <span className='font-medium text-white/80'>Original Prompt:</span>{' '}
+                                    <span className='font-medium text-white/80'>原始描述词：</span>{' '}
                                     {selectedVideo.prompt}
                                 </p>
                                 <p className='mt-1 text-xs text-white/40'>
-                                    {selectedVideo.model} • {selectedVideo.size} • {selectedVideo.seconds}s
+                                    {selectedVideo.model} • {selectedVideo.size} • {selectedVideo.seconds} 秒
                                 </p>
                             </div>
                         </div>
@@ -143,11 +143,11 @@ export function RemixForm({
 
                     <div className='space-y-1.5'>
                         <Label htmlFor='remix-prompt' className='text-white'>
-                            Remix Prompt
+                            混剪描述词
                         </Label>
                         <Textarea
                             id='remix-prompt'
-                            placeholder='e.g., Change the color palette to teal, sand, and rust, with a warm backlight.'
+                            placeholder='例如：将色彩改为青绿色、沙色和铁锈色，并加入温暖的逆光。'
                             value={remixPrompt}
                             onChange={(e) => setRemixPrompt(e.target.value)}
                             required
@@ -155,20 +155,20 @@ export function RemixForm({
                             className='min-h-[100px] resize-none rounded-md border border-white/20 bg-black text-white placeholder:text-white/40 focus:border-white/50 focus:ring-white/50'
                         />
                         <p className='text-xs text-white/40'>
-                            Describe a single, well-defined change. Smaller edits preserve more of the original fidelity.
+                            请描述一个明确的单项修改。改动越小，越能保留原视频效果。
                         </p>
                     </div>
 
                     {!sourceVideoId && completedVideos.length > 0 && (
                         <div className='rounded-md border border-white/20 bg-white/5 p-4 text-center'>
-                            <p className='text-sm text-white/60'>Select a source video above to begin remixing.</p>
+                            <p className='text-sm text-white/60'>请先在上方选择源视频，再开始混剪。</p>
                         </div>
                     )}
 
                     {completedVideos.length === 0 && (
                         <div className='rounded-md border border-white/20 bg-white/5 p-4 text-center'>
                             <p className='text-sm text-white/60'>
-                                No completed videos available yet. Create a video first, then you can remix it here.
+                                暂无已完成的视频。请先创建视频，再回到这里进行混剪。
                             </p>
                         </div>
                     )}
@@ -181,12 +181,12 @@ export function RemixForm({
                         {isLoading ? (
                             <>
                                 <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                                Creating Remix...
+                                正在创建混剪……
                             </>
                         ) : (
                             <>
                                 <Sparkles className='mr-2 h-4 w-4' />
-                                Remix Video
+                                混剪视频
                             </>
                         )}
                     </Button>

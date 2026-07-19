@@ -38,7 +38,7 @@ export function ApiKeyDialog({ isOpen, onOpenChange, onSave }: ApiKeyDialogProps
             setCurrentApiKey('');
             onOpenChange(false);
         } catch (error) {
-            setSaveError(error instanceof Error ? error.message : 'Failed to save API key.');
+            setSaveError(error instanceof Error ? error.message : 'API 密钥保存失败。');
         } finally {
             setIsSaving(false);
         }
@@ -57,9 +57,9 @@ export function ApiKeyDialog({ isOpen, onOpenChange, onSave }: ApiKeyDialogProps
         <Dialog open={isOpen} onOpenChange={handleDialogClose}>
             <DialogContent className='border-white/20 bg-black text-white sm:max-w-[425px]'>
                 <DialogHeader>
-                    <DialogTitle className='text-white'>Configure OpenAI API Key</DialogTitle>
+                    <DialogTitle className='text-white'>配置 OpenAI API 密钥</DialogTitle>
                     <DialogDescription className='text-white/60'>
-                        Enter your OpenAI API key to use the playground in frontend mode. The key is stored only in this browser and never sent to our servers.
+                        输入 OpenAI API 密钥以使用前端模式。密钥仅保存在当前浏览器中，不会发送到我们的服务器。
                     </DialogDescription>
                 </DialogHeader>
                 <div className='grid gap-4 py-4'>
@@ -89,7 +89,7 @@ export function ApiKeyDialog({ isOpen, onOpenChange, onSave }: ApiKeyDialogProps
                         onClick={() => void handleSave()}
                         disabled={isSaving || !currentApiKey.trim()}
                         className='bg-white px-6 text-black hover:bg-white/90 disabled:bg-white/10 disabled:text-white/40'>
-                        {isSaving ? 'Saving…' : 'Save'}
+                        {isSaving ? '正在保存……' : '保存'}
                     </Button>
                 </DialogFooter>
             </DialogContent>
