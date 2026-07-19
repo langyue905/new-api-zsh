@@ -11,7 +11,7 @@ import { ApiKeyGate } from '@/components/api-key-gate';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, KeyRound } from 'lucide-react';
 import { calculateVideoCost } from '@/lib/cost-utils';
 import { db, type VideoRecord } from '@/lib/db';
 import { VideoService, type ApiMode } from '@/lib/video-service';
@@ -1195,6 +1195,20 @@ export default function HomePage() {
             </Dialog>
 
             <div className='w-full max-w-7xl space-y-6'>
+                {isFrontendModeEnabled && clientApiKey && (
+                    <div className='flex justify-end'>
+                        <Button
+                            type='button'
+                            variant='outline'
+                            size='icon'
+                            onClick={handleOpenApiKeyDialog}
+                            aria-label='更换 API 密钥'
+                            title='更换 API 密钥'
+                            className='border-white/20 bg-black text-white hover:bg-white/10 hover:text-white'>
+                            <KeyRound className='h-4 w-4' />
+                        </Button>
+                    </div>
+                )}
                 <div className='grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-stretch'>
                     <div className='relative flex min-h-[600px] flex-col lg:col-span-1'>
                         <ApiKeyGate
