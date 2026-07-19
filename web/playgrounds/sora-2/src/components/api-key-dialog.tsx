@@ -59,7 +59,7 @@ export function ApiKeyDialog({ isOpen, onOpenChange, onSave }: ApiKeyDialogProps
                 <DialogHeader>
                     <DialogTitle className='text-white'>配置 OpenAI API 密钥</DialogTitle>
                     <DialogDescription className='text-white/60'>
-                        输入 OpenAI API 密钥以使用前端模式。密钥仅保存在当前浏览器中，不会发送到我们的服务器。
+                        输入 OpenAI API 密钥以使用前端模式。密钥仅保存在当前浏览器中，并会随请求发送到本站的 /v1 中转接口，不会写入网站数据库。
                     </DialogDescription>
                 </DialogHeader>
                 <div className='grid gap-4 py-4'>
