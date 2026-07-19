@@ -10,6 +10,10 @@ export interface DevProxyConfig {
 
 const DEFAULT_PROXY_PREFIX = '/api-proxy'
 
+export function isApiBaseUrlLocked(): boolean {
+  return readRuntimeEnv(import.meta.env.VITE_LOCK_API_BASE_URL) === 'true'
+}
+
 export function normalizeBaseUrl(baseUrl: string): string {
   const trimmed = baseUrl.trim()
   if (!trimmed) return ''
@@ -60,8 +64,14 @@ export function buildApiUrl(
   proxyConfig?: DevProxyConfig | null,
   useApiProxy = false,
 ): string {
-  const normalizedBaseUrl = normalizeBaseUrl(baseUrl)
   const endpointPath = path.replace(/^\/+/, '')
+
+  if (isApiBaseUrlLocked()) {
+    const lockedEndpointPath = endpointPath.replace(/^v1\/+/, '')
+    return lockedEndpointPath ? `/v1/${lockedEndpointPath}` : '/v1'
+  }
+
+  const normalizedBaseUrl = normalizeBaseUrl(baseUrl)
 
   if (useApiProxy) {
     return `${proxyConfig?.prefix ?? DEFAULT_PROXY_PREFIX}/${endpointPath}`

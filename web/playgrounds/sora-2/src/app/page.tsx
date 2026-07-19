@@ -260,8 +260,7 @@ export default function HomePage() {
         return new VideoService({
             mode: apiMode,
             clientApiKey,
-            clientPasswordHash,
-            baseURL: process.env.NEXT_PUBLIC_OPENAI_API_BASE_URL
+            clientPasswordHash
         });
     }, [apiMode, clientApiKey, clientPasswordHash]);
 
@@ -312,7 +311,7 @@ export default function HomePage() {
         }
 
         try {
-            await verifyFrontendApiKey(trimmedKey, process.env.NEXT_PUBLIC_OPENAI_API_BASE_URL);
+            await verifyFrontendApiKey(trimmedKey);
         } catch (error) {
             if (error instanceof InvalidApiKeyError) {
                 throw new Error('OpenAI rejected this API key. Please double-check and try again.');

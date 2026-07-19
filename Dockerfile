@@ -26,7 +26,7 @@ WORKDIR /build
 COPY web/playgrounds/gpt-image/package.json web/playgrounds/gpt-image/package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY web/playgrounds/gpt-image ./
-RUN npm run build
+RUN VITE_LOCK_API_BASE_URL=true npm run build
 
 FROM node:22-alpine AS builder-sora-video
 

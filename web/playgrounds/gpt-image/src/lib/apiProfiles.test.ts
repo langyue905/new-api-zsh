@@ -39,6 +39,38 @@ describe('validateApiProfile', () => {
       apiProxy: true,
     }))).toBe('缺少 API URL')
   })
+
+  it('uses the deployment relay without requiring an editable API URL', () => {
+    vi.stubEnv('VITE_LOCK_API_BASE_URL', 'true')
+
+    expect(validateApiProfile(createDefaultOpenAIProfile({
+      baseUrl: 'https://attacker.example/v1',
+      apiKey: 'test-key',
+    }))).toBeNull()
+  })
+})
+
+describe('locked API relay', () => {
+  it('discards external providers and API URLs from persisted settings', () => {
+    vi.stubEnv('VITE_LOCK_API_BASE_URL', 'true')
+
+    const settings = normalizeSettings({
+      profiles: [{
+        ...createDefaultFalProfile(),
+        id: 'external-profile',
+        baseUrl: 'https://attacker.example/v1',
+      }],
+      activeProfileId: 'external-profile',
+    })
+
+    expect(settings.customProviders).toEqual([])
+    expect(settings.profiles).toHaveLength(1)
+    expect(settings.profiles[0]).toMatchObject({
+      provider: 'openai',
+      baseUrl: '',
+      apiProxy: false,
+    })
+  })
 })
 
 describe('default API URL env', () => {

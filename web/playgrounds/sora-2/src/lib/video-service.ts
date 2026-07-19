@@ -9,7 +9,6 @@ interface ServiceConfig {
     mode: ApiMode;
     clientApiKey?: string | null;
     clientPasswordHash?: string | null;
-    baseURL?: string;
 }
 
 const VIDEO_SECONDS_VALUES: ReadonlyArray<VideoSeconds> = ['4', '8', '12'];
@@ -70,7 +69,7 @@ export class VideoService {
                 throw new Error('API key is required for frontend mode');
             }
 
-            const openai = createFrontendOpenAI(this.config.clientApiKey, this.config.baseURL);
+            const openai = createFrontendOpenAI(this.config.clientApiKey);
 
             const createParams: VideoCreateParams = {
                 model: params.model,
@@ -125,7 +124,7 @@ export class VideoService {
                 throw new Error('API key is required for frontend mode');
             }
 
-            const openai = createFrontendOpenAI(this.config.clientApiKey, this.config.baseURL);
+            const openai = createFrontendOpenAI(this.config.clientApiKey);
             try {
                 const video = await openai.videos.remix(sourceVideoId, { prompt });
                 return video as VideoJob;
@@ -160,7 +159,7 @@ export class VideoService {
                 throw new Error('API key is required for frontend mode');
             }
 
-            const openai = createFrontendOpenAI(this.config.clientApiKey, this.config.baseURL);
+            const openai = createFrontendOpenAI(this.config.clientApiKey);
             try {
                 const video = await openai.videos.retrieve(videoId);
                 return video as VideoJob;
@@ -187,7 +186,7 @@ export class VideoService {
                 throw new Error('API key is required for frontend mode');
             }
 
-            const openai = createFrontendOpenAI(this.config.clientApiKey, this.config.baseURL);
+            const openai = createFrontendOpenAI(this.config.clientApiKey);
             try {
                 await openai.videos.delete(videoId);
             } catch (error) {
@@ -216,7 +215,7 @@ export class VideoService {
                 throw new Error('API key is required for frontend mode');
             }
 
-            const openai = createFrontendOpenAI(this.config.clientApiKey, this.config.baseURL);
+            const openai = createFrontendOpenAI(this.config.clientApiKey);
             try {
                 const content = await openai.videos.downloadContent(videoId, { variant });
                 return await content.blob();

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { normalizeBaseUrl } from '../lib/api'
 import { hasActiveDataOperations } from '../lib/dataOperations'
-import { isApiProxyAvailable, isApiProxyLocked, readClientDevProxyConfig } from '../lib/devProxy'
+import { isApiBaseUrlLocked, isApiProxyAvailable, isApiProxyLocked, readClientDevProxyConfig } from '../lib/devProxy'
 import { useStore, exportData, importData, clearData, type SettingsTab } from '../store'
 import {
   createDefaultOpenAIProfile,
@@ -361,6 +361,7 @@ export default function SettingsModal() {
   const [copyImportUrlOptions, setCopyImportUrlOptions] = useState<CopyImportUrlOptions>(readCopyImportUrlOptions)
 
   const apiProxyConfig = readClientDevProxyConfig()
+  const apiBaseUrlLocked = isApiBaseUrlLocked()
   const apiProxyAvailable = isApiProxyAvailable(apiProxyConfig)
   const apiProxyLocked = isApiProxyLocked(apiProxyConfig)
   const defaultConfigOnly = isDefaultConfigOnlyEnabled()
@@ -1542,7 +1543,7 @@ export default function SettingsModal() {
               </div>
 
               {/* 3. API URL */}
-              {activeProviderUsesApiUrl && (
+              {activeProviderUsesApiUrl && !apiBaseUrlLocked && (
                 <label className="block">
                   <div className="mb-1.5 flex items-center justify-between">
                     <span className="block text-sm text-gray-600 dark:text-gray-300">API URL</span>

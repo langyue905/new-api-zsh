@@ -1,16 +1,16 @@
 import { InvalidApiKeyError } from './errors';
 import OpenAI from 'openai';
 
-export function createFrontendOpenAI(apiKey: string, baseURL?: string): OpenAI {
+export function createFrontendOpenAI(apiKey: string): OpenAI {
     return new OpenAI({
         apiKey,
-        baseURL: baseURL || (typeof window === 'undefined' ? undefined : `${window.location.origin}/v1`),
+        baseURL: typeof window === 'undefined' ? '/v1' : `${window.location.origin}/v1`,
         dangerouslyAllowBrowser: true
     });
 }
 
-export async function verifyFrontendApiKey(apiKey: string, baseURL?: string): Promise<void> {
-    const client = createFrontendOpenAI(apiKey, baseURL);
+export async function verifyFrontendApiKey(apiKey: string): Promise<void> {
+    const client = createFrontendOpenAI(apiKey);
 
     try {
         await client.models.list();
