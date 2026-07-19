@@ -24,10 +24,10 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 
-const NEW_SITE_URL = 'https://zshai.cc'
+const NEW_SITE_URL = 'https://api.zshai.cc'
 const WECHAT_ID = 'xxz231005'
-const DISMISSED_STORAGE_KEY = 'welcome-migration:dismissed'
-const SHOWN_SESSION_KEY = 'welcome-migration:shown'
+const DISMISSED_STORAGE_KEY = 'welcome-migration:v2:dismissed'
+const SHOWN_SESSION_KEY = 'welcome-migration:v2:shown'
 
 type BrowserStorageName = 'localStorage' | 'sessionStorage'
 
@@ -94,8 +94,8 @@ export function WelcomeMigrationDialog() {
     <Dialog
       open={open}
       onOpenChange={handleOpenChange}
-      title='网站迁移通知'
-      description='为了给大家带来更稳定、顺畅的使用体验，我们正在更换服务器，并启用了新的域名。'
+      title='新站已上线 · 余额迁移通知'
+      description='新网站已经完成部署，请前往新站注册使用。旧站余额可以联系主播协助迁移。'
       contentClassName='sm:max-w-xl'
       descriptionClassName='pr-7 leading-6'
       bodyClassName='space-y-4'
@@ -122,16 +122,16 @@ export function WelcomeMigrationDialog() {
       <div className='grid gap-4 sm:grid-cols-[minmax(0,1fr)_180px] sm:items-center'>
         <div className='space-y-4'>
           <p className='text-muted-foreground text-sm leading-6'>
-            新网站目前仍在部署中，完成后请前往
+            新网站已经正式上线，请前往
             <a
               href={NEW_SITE_URL}
               target='_blank'
               rel='noopener noreferrer'
               className='text-foreground mx-1 font-medium underline underline-offset-4'
             >
-              zshai.cc
+              api.zshai.cc
             </a>
-            重新注册并使用。
+            注册新账号。若旧站账号还有余额，请先完成注册，再联系主播提供旧站和新站账号信息，我们会协助处理余额迁移。
           </p>
 
           <div className='bg-muted/30 space-y-3 rounded-lg border p-4'>
@@ -140,11 +140,11 @@ export function WelcomeMigrationDialog() {
                 <MessageCircle className='size-5' aria-hidden='true' />
               </div>
               <p className='text-sm leading-6'>
-                为避免错过新站开放、网站迁移等重要消息，请先添加主播微信。
+                如需迁移余额或遇到其他问题，请添加主播微信，我们会及时协助处理。
               </p>
             </div>
             <div>
-              <div className='text-muted-foreground text-xs'>微信号</div>
+              <div className='text-muted-foreground text-xs'>主播微信号</div>
               <div className='mt-1 font-mono text-lg font-semibold break-all'>
                 {WECHAT_ID}
               </div>
@@ -158,7 +158,7 @@ export function WelcomeMigrationDialog() {
             alt='主播微信二维码'
             className='aspect-square w-full max-w-[180px] rounded-md object-contain'
           />
-          <span className='text-muted-foreground text-xs'>扫码添加微信</span>
+          <span className='text-muted-foreground text-xs'>扫码联系主播</span>
         </div>
       </div>
 
