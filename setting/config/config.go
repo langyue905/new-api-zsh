@@ -16,6 +16,13 @@ type ConfigManager struct {
 	mutex   sync.RWMutex
 }
 
+// MapCodec lets configuration modules provide their own synchronized snapshot
+// and update behavior instead of exposing mutable fields to reflection.
+type MapCodec interface {
+	ConfigToMap() (map[string]string, error)
+	UpdateConfigFromMap(map[string]string) error
+}
+
 var GlobalConfig = NewConfigManager()
 
 func NewConfigManager() *ConfigManager {
@@ -91,6 +98,9 @@ func (cm *ConfigManager) SaveToDB(updateFunc func(key, value string) error) erro
 
 // 辅助函数：将配置对象转换为map
 func configToMap(config interface{}) (map[string]string, error) {
+	if codec, ok := config.(MapCodec); ok {
+		return codec.ConfigToMap()
+	}
 	result := make(map[string]string)
 
 	val := reflect.ValueOf(config)
@@ -163,6 +173,9 @@ func configToMap(config interface{}) (map[string]string, error) {
 
 // 辅助函数：从map更新配置对象
 func updateConfigFromMap(config interface{}, configMap map[string]string) error {
+	if codec, ok := config.(MapCodec); ok {
+		return codec.UpdateConfigFromMap(configMap)
+	}
 	val := reflect.ValueOf(config)
 	if val.Kind() != reflect.Ptr {
 		return nil

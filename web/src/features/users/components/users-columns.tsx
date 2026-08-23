@@ -293,6 +293,23 @@ export function useUsersColumns(): ColumnDef<User>[] {
       meta: { mobileHidden: true },
     },
     {
+      accessorKey: 'violation_count',
+      header: t('Violation Count'),
+      cell: ({ row }) => {
+        const count = row.original.violation_count ?? 0
+        return (
+          <StatusBadge
+            label={count.toLocaleString()}
+            variant={count > 0 ? 'danger' : 'neutral'}
+            copyable={false}
+          />
+        )
+      },
+      size: 120,
+      enableSorting: false,
+      meta: { mobileOrder: 50 },
+    },
+    {
       accessorKey: 'created_at',
       header: t('Created At'),
       cell: ({ row }) => {

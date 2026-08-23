@@ -300,6 +300,7 @@ func InitResources() error {
 	ratio_setting.InitRatioSettings()
 
 	service.InitHttpClient()
+	controller.SetPromptAuditTester(service.NewPromptAuditClient(nil))
 
 	service.InitTokenEncoders()
 
@@ -323,6 +324,7 @@ func InitResources() error {
 		}
 	}
 	model.InitOptionMap()
+	model.StartPromptAuditLogCleanup()
 
 	// 清理旧的磁盘缓存文件
 	common.CleanupOldCacheFiles()

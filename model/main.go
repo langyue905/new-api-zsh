@@ -295,8 +295,13 @@ func migrateDB() error {
 		&SystemTaskLock{},
 		&CasbinRule{},
 		&AuthzRole{},
+		&PromptAuditLog{},
+		&PromptAuditConversationBlock{},
 	)
 	if err != nil {
+		return err
+	}
+	if err := migratePromptAuditPromptToLongText(); err != nil {
 		return err
 	}
 	if err := InitializeUserAuthVersions(); err != nil {
@@ -359,6 +364,8 @@ func migrateDBFast() error {
 		{&SystemInstance{}, "SystemInstance"},
 		{&SystemTask{}, "SystemTask"},
 		{&SystemTaskLock{}, "SystemTaskLock"},
+		{&PromptAuditLog{}, "PromptAuditLog"},
+		{&PromptAuditConversationBlock{}, "PromptAuditConversationBlock"},
 	}
 	// 动态计算migration数量，确保errChan缓冲区足够大
 	errChan := make(chan error, len(migrations))
@@ -382,6 +389,9 @@ func migrateDBFast() error {
 		if err != nil {
 			return err
 		}
+	}
+	if err := migratePromptAuditPromptToLongText(); err != nil {
+		return err
 	}
 	if err := InitializeUserAuthVersions(); err != nil {
 		return err

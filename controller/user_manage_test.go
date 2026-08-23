@@ -159,3 +159,34 @@ func TestManageUserDeleteReturnsImmediatelyAndUnknownActionFails(t *testing.T) {
 	assert.EqualValues(t, 1, unchanged.AuthVersion)
 	assert.Equal(t, common.UserStatusEnabled, unchanged.Status)
 }
+
+func TestManageUserAdjustsViolationCountWithRoleGuardAndBoundaries(t *testing.T) {
+	db := setupManageUserTestDB(t)
+	user := model.User{
+		Username: "managed-violation-user", Password: "password", Role: common.RoleCommonUser,
+		Status: common.UserStatusEnabled, Group: "default", AuthVersion: 1, AffCode: "managed-violation", ViolationCount: 3,
+	}
+	require.NoError(t, db.Create(&user).Error)
+
+	for _, request := range []struct {
+		mode     string
+		value    int
+		expected int
+	}{
+		{mode: "add", value: 2, expected: 5},
+		{mode: "subtract", value: 1, expected: 4},
+		{mode: "override", value: 0, expected: 0},
+	} {
+		recorder := performManageUserRequest(t, fmt.Sprintf(`{"id":%d,"action":"adjust_violation_count","mode":"%s","value":%d}`, user.Id, request.mode, request.value))
+		assert.Contains(t, recorder.Body.String(), `"success":true`)
+		var updated model.User
+		require.NoError(t, db.First(&updated, user.Id).Error)
+		assert.Equal(t, request.expected, updated.ViolationCount)
+	}
+
+	recorder := performManageUserRequest(t, fmt.Sprintf(`{"id":%d,"action":"adjust_violation_count","mode":"subtract","value":1}`, user.Id))
+	assert.Contains(t, recorder.Body.String(), `"success":false`)
+	var unchanged model.User
+	require.NoError(t, db.First(&unchanged, user.Id).Error)
+	assert.Zero(t, unchanged.ViolationCount)
+}

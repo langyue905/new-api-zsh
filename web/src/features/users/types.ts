@@ -45,6 +45,7 @@ export const userSchema = z.object({
   quota: z.number(),
   used_quota: z.number(),
   request_count: z.number(),
+  violation_count: z.number().default(0),
   group: z.string(),
   aff_code: z.string().optional(),
   aff_count: z.number().optional(),
@@ -135,6 +136,7 @@ export type ManageUserAction =
   | 'disable'
   | 'delete'
   | 'add_quota'
+  | 'adjust_violation_count'
 
 export type QuotaAdjustMode = 'add' | 'subtract' | 'override'
 
@@ -142,6 +144,15 @@ export interface ManageUserQuotaPayload {
   id: number
   action: 'add_quota'
   mode: QuotaAdjustMode
+  value: number
+}
+
+export type ViolationCountAdjustMode = 'add' | 'subtract' | 'override'
+
+export interface ManageUserViolationCountPayload {
+  id: number
+  action: 'adjust_violation_count'
+  mode: ViolationCountAdjustMode
   value: number
 }
 

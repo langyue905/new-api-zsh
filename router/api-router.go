@@ -249,6 +249,17 @@ func SetApiRouter(router *gin.Engine) {
 			performanceRoute.GET("/logs", controller.GetLogFiles)
 			performanceRoute.DELETE("/logs", controller.CleanupLogFiles)
 		}
+		promptAuditRoute := apiRouter.Group("/prompt-audit")
+		promptAuditRoute.Use(middleware.RootAuth())
+		{
+			promptAuditRoute.GET("/logs", controller.GetPromptAuditLogs)
+			promptAuditRoute.POST("/logs/cleanup", controller.CleanupPromptAuditLogs)
+			promptAuditRoute.GET("/logs/:id", controller.GetPromptAuditLog)
+			promptAuditRoute.DELETE("/logs/:id/conversation-block", controller.ReleasePromptAuditConversationBlock)
+			promptAuditRoute.GET("/settings", controller.GetPromptAuditSettings)
+			promptAuditRoute.PUT("/settings", controller.UpdatePromptAuditSettings)
+			promptAuditRoute.POST("/test", controller.TestPromptAuditSettings)
+		}
 		ratioSyncRoute := apiRouter.Group("/ratio_sync")
 		ratioSyncRoute.Use(middleware.RootAuth())
 		{
