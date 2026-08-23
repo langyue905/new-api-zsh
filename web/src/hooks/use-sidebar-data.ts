@@ -34,6 +34,7 @@ import {
   ServerCog,
   Settings,
   ShoppingCart,
+  ShieldAlert,
   Ticket,
   User,
   Users,
@@ -180,6 +181,12 @@ export function useSidebarData(): SidebarData {
             title: t('Subscriptions'),
             url: '/subscriptions',
             icon: CreditCard,
+          },
+          {
+            title: t('Prompt Audit Logs'),
+            url: '/prompt-audit',
+            icon: ShieldAlert,
+            requiredRole: ROLE.SUPER_ADMIN,
           },
           {
             title: t('System Info'),

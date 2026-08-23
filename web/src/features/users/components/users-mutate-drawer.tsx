@@ -89,8 +89,9 @@ import {
   transformFormDataToPayload,
   transformUserToFormDefaults,
 } from '../lib'
-import { type User } from '../types'
+import type { User } from '../types'
 import { UserQuotaDialog } from './user-quota-dialog'
+import { UserViolationDialog } from './user-violation-dialog'
 import { useUsers } from './users-provider'
 
 type UsersMutateDrawerProps = {
@@ -110,6 +111,10 @@ export function UsersMutateDrawer({
   const currentUser = useAuthStore((s) => s.auth.user)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [quotaDialogOpen, setQuotaDialogOpen] = useState(false)
+  const [violationDialogOpen, setViolationDialogOpen] = useState(false)
+  const [currentViolationCount, setCurrentViolationCount] = useState(
+    currentRow?.violation_count ?? 0
+  )
 
   // Fetch groups
   const { data: groupsData } = useQuery({
@@ -135,17 +140,21 @@ export function UsersMutateDrawer({
   // Load existing data when updating
   useEffect(() => {
     if (open && isUpdate && currentRow) {
+      setCurrentViolationCount(currentRow.violation_count ?? 0)
       // For update, fetch fresh data
-      getUser(currentRow.id).then((result) => {
-        if (result.success && result.data) {
-          form.reset(transformUserToFormDefaults(result.data))
-        }
-      })
+      void getUser(currentRow.id)
+        .then((result) => {
+          if (result.success && result.data) {
+            form.reset(transformUserToFormDefaults(result.data))
+            setCurrentViolationCount(result.data.violation_count)
+          }
+        })
+        .catch(() => toast.error(t(ERROR_MESSAGES.UNEXPECTED)))
     } else if (open && !isUpdate) {
       // For create, reset to defaults
       form.reset(USER_FORM_DEFAULT_VALUES)
     }
-  }, [open, isUpdate, currentRow, form])
+  }, [open, isUpdate, currentRow, form, t])
 
   const { meta: currencyMeta } = getCurrencyDisplay()
   const currencyLabel = getCurrencyLabel()
@@ -195,7 +204,7 @@ export function UsersMutateDrawer({
               : t(ERROR_MESSAGES.CREATE_FAILED))
         )
       }
-    } catch (_error) {
+    } catch {
       toast.error(t(ERROR_MESSAGES.UNEXPECTED))
     } finally {
       setIsSubmitting(false)
@@ -207,6 +216,7 @@ export function UsersMutateDrawer({
     const result = await getUser(currentRow.id)
     if (result.success && result.data) {
       form.reset(transformUserToFormDefaults(result.data))
+      setCurrentViolationCount(result.data.violation_count)
     }
     triggerRefresh()
   }
@@ -219,6 +229,8 @@ export function UsersMutateDrawer({
           onOpenChange(v)
           if (!v) {
             form.reset()
+            setQuotaDialogOpen(false)
+            setViolationDialogOpen(false)
           }
         }}
       >
@@ -278,7 +290,8 @@ export function UsersMutateDrawer({
                             { value: '10', label: t('Admin') },
                           ]}
                           onValueChange={(value) =>
-                            value !== null && field.onChange(parseInt(value))
+                            value !== null &&
+                            field.onChange(Number.parseInt(value))
                           }
                           value={String(field.value)}
                         >
@@ -360,12 +373,10 @@ export function UsersMutateDrawer({
                       <FormItem>
                         <FormLabel>{t('Group')}</FormLabel>
                         <Select
-                          items={[
-                            ...groups.map((group) => ({
-                              value: group,
-                              label: group,
-                            })),
-                          ]}
+                          items={groups.map((group) => ({
+                            value: group,
+                            label: group,
+                          }))}
                           onValueChange={field.onChange}
                           value={field.value}
                         >
@@ -388,6 +399,33 @@ export function UsersMutateDrawer({
                       </FormItem>
                     )}
                   />
+
+                  <div className='space-y-2'>
+                    <Label htmlFor='user-violation-count'>
+                      {t('Violation Count')}
+                    </Label>
+                    <div className='flex gap-2'>
+                      <Input
+                        id='user-violation-count'
+                        value={currentViolationCount}
+                        readOnly
+                        className='flex-1'
+                      />
+                      <Button
+                        type='button'
+                        variant='outline'
+                        onClick={() => setViolationDialogOpen(true)}
+                      >
+                        <Pencil className='mr-1 h-4 w-4' />
+                        {t('Adjust Count')}
+                      </Button>
+                    </div>
+                    <p className='text-muted-foreground text-sm'>
+                      {t(
+                        'Counts prompt audit requests that were actually blocked.'
+                      )}
+                    </p>
+                  </div>
 
                   <FormField
                     control={form.control}
@@ -586,13 +624,22 @@ export function UsersMutateDrawer({
 
       {/* Adjust Quota Dialog */}
       {currentRow && (
-        <UserQuotaDialog
-          open={quotaDialogOpen}
-          onOpenChange={setQuotaDialogOpen}
-          userId={currentRow.id}
-          currentQuota={parseQuotaFromDollars(currentQuotaRaw || 0)}
-          onSuccess={refreshUserData}
-        />
+        <>
+          <UserQuotaDialog
+            open={quotaDialogOpen}
+            onOpenChange={setQuotaDialogOpen}
+            userId={currentRow.id}
+            currentQuota={parseQuotaFromDollars(currentQuotaRaw || 0)}
+            onSuccess={refreshUserData}
+          />
+          <UserViolationDialog
+            open={violationDialogOpen}
+            onOpenChange={setViolationDialogOpen}
+            userId={currentRow.id}
+            currentCount={currentViolationCount}
+            onSuccess={refreshUserData}
+          />
+        </>
       )}
     </>
   )

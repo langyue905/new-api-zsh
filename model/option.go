@@ -10,6 +10,7 @@ import (
 	"github.com/QuantumNous/new-api/setting/config"
 	"github.com/QuantumNous/new-api/setting/operation_setting"
 	"github.com/QuantumNous/new-api/setting/performance_setting"
+	promptauditsetting "github.com/QuantumNous/new-api/setting/prompt_audit_setting"
 	"github.com/QuantumNous/new-api/setting/ratio_setting"
 	"github.com/QuantumNous/new-api/setting/system_setting"
 	"gorm.io/gorm"
@@ -188,8 +189,24 @@ func InitOptionMap() {
 }
 
 func loadOptionsFromDatabase() {
+	if err := promptauditsetting.ReloadFrom(func() (map[string]string, error) {
+		var options []*Option
+		if err := DB.Where("key LIKE ?", "prompt_audit_setting.%").Find(&options).Error; err != nil {
+			return nil, err
+		}
+		values := make(map[string]string, len(options))
+		for _, option := range options {
+			values[strings.TrimPrefix(option.Key, "prompt_audit_setting.")] = option.Value
+		}
+		return values, nil
+	}); err != nil {
+		common.SysLog("failed to reload prompt audit settings: " + err.Error())
+	}
 	options, _ := AllOption()
 	for _, option := range options {
+		if strings.HasPrefix(option.Key, "prompt_audit_setting.") {
+			continue
+		}
 		err := updateOptionMap(option.Key, option.Value)
 		if err != nil {
 			common.SysLog("failed to update option map: " + err.Error())
@@ -243,6 +260,21 @@ func UpdateOption(key string, value string) error {
 // is touched — safe for callers that must commit a set of related options
 // atomically (e.g. payment gateway binding).
 func UpdateOptionsBulk(values map[string]string) error {
+	if err := PersistOptionsBulk(values); err != nil {
+		return err
+	}
+	for k, v := range values {
+		if err := updateOptionMap(k, v); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// PersistOptionsBulk writes related options atomically without publishing
+// them to in-process configuration. Callers that coordinate their own
+// configuration lock can publish one validated snapshot after this succeeds.
+func PersistOptionsBulk(values map[string]string) error {
 	if len(values) == 0 {
 		return nil
 	}
@@ -267,11 +299,6 @@ func UpdateOptionsBulk(values map[string]string) error {
 	if err != nil {
 		return err
 	}
-	for k, v := range values {
-		if err := updateOptionMap(k, v); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
@@ -280,6 +307,10 @@ func updateOptionMap(key string, value string) (err error) {
 		common.OptionMapRWMutex.Lock()
 		delete(common.OptionMap, key)
 		common.OptionMapRWMutex.Unlock()
+		return nil
+	}
+	if strings.HasPrefix(key, "prompt_audit_setting.") {
+		handleConfigUpdate(key, value)
 		return nil
 	}
 	common.OptionMapRWMutex.Lock()

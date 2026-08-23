@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { CalendarDays } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
@@ -30,11 +30,12 @@ import {
 import dayjs from '@/lib/dayjs'
 import { cn } from '@/lib/utils'
 
-interface CompactDateTimeRangePickerProps {
+export interface CompactDateTimeRangePickerProps {
   start?: Date
   end?: Date
   onChange: (range: { start?: Date; end?: Date }) => void
   className?: string
+  invalid?: boolean
 }
 
 function toInputValue(date?: Date): string {
@@ -52,8 +53,12 @@ export function CompactDateTimeRangePicker({
   end,
   onChange,
   className,
+  invalid,
 }: CompactDateTimeRangePickerProps) {
   const { t } = useTranslation()
+  const inputId = useId()
+  const startInputId = `${inputId}-start`
+  const endInputId = `${inputId}-end`
   const [open, setOpen] = useState(false)
   const [draftStart, setDraftStart] = useState(toInputValue(start))
   const [draftEnd, setDraftEnd] = useState(toInputValue(end))
@@ -122,6 +127,7 @@ export function CompactDateTimeRangePicker({
         render={
           <Button
             type='button'
+            aria-invalid={invalid}
             variant='outline'
             className={cn(
               'w-full justify-start gap-2 px-2.5 text-sm leading-5 font-normal tabular-nums',
@@ -141,10 +147,14 @@ export function CompactDateTimeRangePicker({
         <div className='space-y-3'>
           <div className='grid gap-2 sm:grid-cols-[1fr_auto_1fr] sm:items-end'>
             <div className='space-y-1.5'>
-              <div className='text-muted-foreground text-xs'>
+              <label
+                htmlFor={startInputId}
+                className='text-muted-foreground text-xs'
+              >
                 {t('Start Time')}
-              </div>
+              </label>
               <Input
+                id={startInputId}
                 type='datetime-local'
                 value={draftStart}
                 onChange={(e) => setDraftStart(e.target.value)}
@@ -155,10 +165,14 @@ export function CompactDateTimeRangePicker({
               ~
             </span>
             <div className='space-y-1.5'>
-              <div className='text-muted-foreground text-xs'>
+              <label
+                htmlFor={endInputId}
+                className='text-muted-foreground text-xs'
+              >
                 {t('End Time')}
-              </div>
+              </label>
               <Input
+                id={endInputId}
                 type='datetime-local'
                 value={draftEnd}
                 onChange={(e) => setDraftEnd(e.target.value)}

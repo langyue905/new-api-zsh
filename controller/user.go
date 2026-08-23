@@ -1206,6 +1206,25 @@ func ManageUser(c *gin.Context) {
 			"message": "",
 		})
 		return
+	case "adjust_violation_count":
+		oldCount := user.ViolationCount
+		if err := model.AdjustUserViolationCount(user.Id, req.Mode, req.Value); err != nil {
+			common.ApiError(c, err)
+			return
+		}
+		updatedUser, err := model.GetUserById(user.Id, false)
+		if err != nil {
+			common.ApiError(c, err)
+			return
+		}
+		recordManageAuditFor(c, user.Id, "user.violation_count_adjust", map[string]interface{}{
+			"mode":  req.Mode,
+			"value": req.Value,
+			"from":  oldCount,
+			"to":    updatedUser.ViolationCount,
+		})
+		c.JSON(http.StatusOK, gin.H{"success": true, "message": ""})
+		return
 	default:
 		common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 		return

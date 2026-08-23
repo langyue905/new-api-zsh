@@ -19,6 +19,13 @@ For commercial licensing, please contact support@quantumnous.com
 // Static translation keys that don't get picked up by the t('...') regex.
 // These cover dynamic labels (e.g. constants, configs) that are passed into t at runtime.
 export const STATIC_I18N_KEYS = [
+  // Prompt audit validation
+  'Threshold is required',
+  'Timeout must be a whole number between 1 and 30 seconds',
+  'Concurrency must be a whole number between 1 and 100',
+  'Queue size must be a whole number between 1 and 10000',
+  'Retention must be a whole number between 1 and 365 days',
+
   // Header navigation
   'Home',
   'Console',

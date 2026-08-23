@@ -44,7 +44,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mapfile -t files < <(git diff --name-only "origin/${BASE_REF}...HEAD" -- src | grep -E '\.(ts|tsx)$' || true)
+          mapfile -t files < <(git diff --name-only --relative=web "origin/${BASE_REF}...HEAD" -- src | grep -E '\.(ts|tsx)$' || true)
           if (( ${#files[@]} )); then
             bunx oxlint -c .oxlintrc.json "${files[@]}"
           fi

@@ -19,6 +19,8 @@ import (
 
 const UserNameMaxLength = 20
 
+const maxUserViolationCount = int(^uint32(0) >> 1)
+
 var userSortColumns = map[string]string{
 	"id":            "id",
 	"username":      "username",
@@ -95,6 +97,7 @@ type User struct {
 	Quota            int                        `json:"quota" gorm:"type:int;default:0"`
 	UsedQuota        int                        `json:"used_quota" gorm:"type:int;default:0;column:used_quota"` // used quota
 	RequestCount     int                        `json:"request_count" gorm:"type:int;default:0;"`               // request number
+	ViolationCount   int                        `json:"violation_count" gorm:"type:int;not null;default:0;column:violation_count"`
 	Group            string                     `json:"group" gorm:"type:varchar(64);default:'default'"`
 	AffCode          string                     `json:"aff_code" gorm:"type:varchar(32);column:aff_code;uniqueIndex"`
 	AffCount         int                        `json:"aff_count" gorm:"type:int;default:0;column:aff_count"`
@@ -800,6 +803,7 @@ func (user *User) UpdateWithTx(tx *gorm.DB, updatePassword bool) error {
 		"quota",
 		"used_quota",
 		"request_count",
+		"violation_count",
 		"aff_count",
 		"aff_quota",
 		"aff_history",
@@ -1329,6 +1333,59 @@ func DeltaUpdateUserQuota(id int, delta int) (err error) {
 	} else {
 		return DecreaseUserQuota(id, -delta, false)
 	}
+}
+
+func IncrementUserViolationCount(id int) error {
+	if id <= 0 {
+		return errors.New("invalid user id")
+	}
+	result := DB.Model(&User{}).
+		Where("id = ? AND violation_count < ?", id, maxUserViolationCount).
+		UpdateColumn("violation_count", gorm.Expr("violation_count + ?", 1))
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return errors.New("user violation count cannot be increased")
+	}
+	return nil
+}
+
+func AdjustUserViolationCount(id int, mode string, value int) error {
+	if id <= 0 {
+		return errors.New("invalid user id")
+	}
+	var result *gorm.DB
+	switch mode {
+	case "add":
+		if value <= 0 || value > maxUserViolationCount {
+			return errors.New("violation count adjustment must be a positive integer")
+		}
+		result = DB.Model(&User{}).
+			Where("id = ? AND violation_count <= ?", id, maxUserViolationCount-value).
+			UpdateColumn("violation_count", gorm.Expr("violation_count + ?", value))
+	case "subtract":
+		if value <= 0 {
+			return errors.New("violation count adjustment must be a positive integer")
+		}
+		result = DB.Model(&User{}).
+			Where("id = ? AND violation_count >= ?", id, value).
+			UpdateColumn("violation_count", gorm.Expr("violation_count - ?", value))
+	case "override":
+		if value < 0 || value > maxUserViolationCount {
+			return errors.New("violation count must be between 0 and 2147483647")
+		}
+		result = DB.Model(&User{}).Where("id = ?", id).UpdateColumn("violation_count", value)
+	default:
+		return errors.New("invalid violation count adjustment mode")
+	}
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return errors.New("violation count adjustment is out of range")
+	}
+	return nil
 }
 
 //func GetRootUserEmail() (email string) {
