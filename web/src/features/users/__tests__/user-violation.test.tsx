@@ -156,11 +156,11 @@ afterAll(() => {
 })
 
 describe('user violation management', () => {
-  test('replaces invite information with the violation count column', async () => {
+  test('keeps invite information and adds the violation count column', async () => {
     await render(<ColumnsProbe />)
 
     assert.equal(document.body.textContent?.includes('Violation Count'), true)
-    assert.equal(document.body.textContent?.includes('Invite Info'), false)
+    assert.equal(document.body.textContent?.includes('Invite Info'), true)
   })
 
   test('rejects a subtraction below zero and submits a valid adjustment', async () => {
