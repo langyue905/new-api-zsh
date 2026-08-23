@@ -25,68 +25,53 @@ jobs:
 
   frontend:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
-      - name: Install classic frontend dependencies
-        working-directory: web
-        run: bun install --filter ./classic --frozen-lockfile
-      - name: Build classic frontend
-        working-directory: web/classic
-        run: bun run build
-      - name: Reset frontend dependencies
-        shell: bash
-        run: rm -rf web/node_modules web/default/node_modules web/classic/node_modules
-      - name: Install default frontend dependencies
+          bun-version: '1.3.14'
+      - name: Install frontend dependencies
         working-directory: web
         run: bun install --frozen-lockfile
-      - name: Type-check default frontend
-        working-directory: web/default
+      - name: Lint frontend
+        working-directory: web
+        run: bun run lint
+      - name: Type-check frontend
+        working-directory: web
         run: bun run typecheck
-      - name: Build default frontend
-        working-directory: web/default
+      - name: Test frontend
+        working-directory: web
+        run: bun run test
+      - name: Build frontend
+        working-directory: web
         run: bun run build
-      - name: Verify and package embedded frontend assets
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -f web/default/dist/index.html
-          test -f web/classic/dist/index.html
-          tar -C web -czf "$GITHUB_WORKSPACE/web/embedded-web-dist.tgz" default/dist classic/dist
-      - name: Upload embedded frontend assets
-        uses: actions/upload-artifact@v4
-        with:
-          name: embedded-web-dist
-          path: web/embedded-web-dist.tgz
-          if-no-files-found: error
-          retention-days: 1
 
   backend:
-    needs:
-      - frontend
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GOWORK: 'off'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
           cache: true
-      - name: Download embedded frontend assets
-        uses: actions/download-artifact@v4
-        with:
-          name: embedded-web-dist
-          path: artifact
-      - name: Restore embedded frontend assets
+          cache-dependency-path: |
+            go.sum
+            relaykit/go.sum
+      - name: Create frontend embed placeholder
         shell: bash
         run: |
-          set -euo pipefail
-          tar -C web -xzf artifact/embedded-web-dist.tgz
-          test -f web/default/dist/index.html
-          test -f web/classic/dist/index.html
+          mkdir -p web/dist
+          touch web/dist/index.html
+      - name: Vet backend modules
+        run: |
+          go vet ./...
+          (cd relaykit && go vet ./...)
       - name: Run backend tests
-        run: go test ./...
+        run: make test
 
   image-build:
     needs:
