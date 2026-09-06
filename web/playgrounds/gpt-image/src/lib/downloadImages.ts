@@ -1,6 +1,7 @@
 import { zipSync } from 'fflate'
 import type { TaskRecord } from '../types'
 import { ensureImageCached } from '../store'
+import { dataUrlToBlob } from './dataUrl'
 import { getNumberedFileNameBase, sanitizeFileNamePart } from './exportFileName'
 
 const MIME_EXTENSIONS: Record<string, string> = {
@@ -105,11 +106,18 @@ export function getImageZipEntries(imageIds: string[], fileNameBase = 'image'): 
 async function getImageBlob(imageIdOrUrl: string): Promise<Blob> {
   let src = imageIdOrUrl
   if (!imageIdOrUrl.startsWith('data:') && !imageIdOrUrl.startsWith('http://') && !imageIdOrUrl.startsWith('https://')) {
-    src = await ensureImageCached(imageIdOrUrl) ?? imageIdOrUrl
+    src = await ensureImageCached(imageIdOrUrl) ?? ''
+    if (!src && typeof document !== 'undefined') {
+      const image = Array.from(document.images).find((item) => item.dataset.imageId === imageIdOrUrl)
+      src = image?.currentSrc || image?.src || ''
+    }
+    if (!src) throw new Error(`图片原图不存在：${imageIdOrUrl}`)
   }
 
+  if (src.startsWith('data:')) return dataUrlToBlob(src, 'image/png')
+
   const res = await fetch(src)
-  if (!res.ok && !src.startsWith('data:')) throw new Error(`读取图片失败：${imageIdOrUrl}`)
+  if (!res.ok) throw new Error(`读取图片失败：${imageIdOrUrl}`)
   return await res.blob()
 }
 
@@ -131,4 +139,3 @@ function getBlobExtension(blob: Blob): string {
 function delay(ms: number) {
   return new Promise((resolve) => window.setTimeout(resolve, ms))
 }
-

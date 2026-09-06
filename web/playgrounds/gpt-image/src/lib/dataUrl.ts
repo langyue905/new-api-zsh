@@ -23,6 +23,23 @@ export function dataUrlToBytes(dataUrl: string): { ext: string; bytes: Uint8Arra
   return { ext, bytes }
 }
 
+export function dataUrlToBlob(dataUrl: string, fallbackMime = 'application/octet-stream'): Blob {
+  const commaIndex = dataUrl.indexOf(',')
+  if (commaIndex < 0) throw new Error('图片数据格式无效')
+
+  const header = dataUrl.slice(5, commaIndex)
+  const mime = header.split(';')[0] || fallbackMime
+  const payload = dataUrl.slice(commaIndex + 1)
+  if (!header.split(';').slice(1).some((part) => part.toLowerCase() === 'base64')) {
+    return new Blob([decodeURIComponent(payload)], { type: mime })
+  }
+
+  const binary = atob(payload.replace(/\s/g, ''))
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+  return new Blob([bytes], { type: mime })
+}
+
 export function bytesToDataUrl(bytes: Uint8Array, filePath: string): string {
   const ext = filePath.split('.').pop()?.toLowerCase() ?? 'png'
   const mime = IMAGE_MIME_BY_EXTENSION[ext] ?? 'image/png'

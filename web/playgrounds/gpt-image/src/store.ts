@@ -194,6 +194,15 @@ export async function ensureImageCached(id: string): Promise<string | undefined>
     cacheImage(id, rec.dataUrl)
     return rec.dataUrl
   }
+
+  if (typeof document !== 'undefined') {
+    const image = Array.from(document.images).find((item) => item.dataset.imageId === id)
+    const src = image?.currentSrc || image?.src
+    if (src?.startsWith('data:')) {
+      cacheImage(id, src)
+      return src
+    }
+  }
   return undefined
 }
 
@@ -5655,4 +5664,3 @@ export async function addImageFromUrl(src: string): Promise<void> {
   cacheImage(id, dataUrl)
   useStore.getState().addInputImage({ id, dataUrl })
 }
-
